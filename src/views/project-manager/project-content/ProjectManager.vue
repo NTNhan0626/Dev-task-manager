@@ -4,7 +4,7 @@
       <button class="create-project-button" @click="showmodalCreateDepartmentProject = true" >Tạo dự án mới</button>
       <p class="projects-title">Các dự án hiện tại:</p>
       <div class="projects">
-        <div class="project" v-for="project in departmentProjectResponse.data" :key="project.projectId">
+        <div class="project" v-for="project in departmentProjectResponse.data" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
           <p class="project-name">{{ project.projectName }}</p>
           <p class="project-id">Mã dự án: {{ project.projectId }}</p>
           <p class="created-date">Ngày tạo: {{ project.createdDate }}</p>
@@ -13,6 +13,18 @@
           <p class="actual-end-date" v-if="project.actualEndDate !== ''">Ngày hoàn thành: {{ project.actualEndDate }}</p>
           <p class="status">Trạng thái: {{ project.status }}</p>
           <p class="progress">Tiến độ: {{ project.progress }}%</p>
+
+          <div class="project-action" v-if="showProjectAction === project.projectId">
+            <button><RouterLink :to="{
+              name:'project-detail',
+              params:{projectId:project.projectId}
+            }">Chi tiết</RouterLink></button>
+            <button @click="openEmployeeSelectionModal(project.projectId)">Chọn nhân viên</button>
+            <button>Tạm dừng</button>
+            <button>Hủy</button>
+
+          </div>
+
         </div>
       </div>
 
@@ -34,15 +46,49 @@
                     <button type="button" @click="showmodalCreateDepartmentProject = false">Hủy</button>
                 </div>
             </form>
+        </div>
+      </div>
+
+      <div v-if="showEmployeeSelectionModal" class="modal-overlay">
+        <div class="modal-content">
+          <h3>Chọn nhân viên tham gia dự án</h3>
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Tên nhân viên</th>
+                <th>Chức vụ</th>
+                <th>Bằng cấp</th>
+                <th>Chuyên môn</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="employee in employees" :key="employee.username">
+                <td>
+                  <input type="checkbox" v-model="selectedEmployees" :value="employee.username" />
+                </td>
+                <td>{{ employee.username }}</td>
+                <td>{{ employee.position }}</td>
+                <td>{{ employee.degree }}</td>
+                <td>{{ employee.specialization }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="modal-buttons">
+            <button type="button" @click="addEmployeesToProject">Thêm nhân viên</button>
+            <button type="button" @click="showEmployeeSelectionModal = false">Hủy</button>
+          </div>
+        </div>
+      </div>
   </div>
-</div>
-    </div>
-  </template>
+</template>
   
 <script setup>
-    import API_ENDPOINTS from '@/api/api';
-    import axios, { AxiosHeaders } from 'axios';
-    import { onMounted, reactive, ref } from 'vue';
+  import API_ENDPOINTS from '@/api/api';
+  import axios, { AxiosHeaders } from 'axios';
+  import { onMounted, reactive, ref } from 'vue';
+  import { RouterLink } from 'vue-router';
     
     const accountId = sessionStorage.getItem("accountId")
     const departmentName = sessionStorage.getItem("departmentName");
@@ -51,7 +97,15 @@
   
     const showmodalCreateDepartmentProject = ref(false);
 
+    const showProjectAction = ref(null)
     
+    const employees = reactive({
+      data:[]
+    }); // Danh sách nhân viên trong phòng ban
+    const selectedEmployees = ref([]); // Mảng chứa các nhân viên được chọn
+    const showEmployeeSelectionModal = ref(false); // Hiển thị modal chọn nhân viên
+
+
     const departmentProjectResponse = reactive({
         data: []
     });
@@ -94,7 +148,7 @@
     }
   };
 
-  const handleCreateDepartmentProject = async () =>{
+const handleCreateDepartmentProject = async () =>{
     try {
         const response = await axios.post(API_ENDPOINTS.CREATE_DEPARTMENTPROJECT(departmentId),newProject,{
             headers:{
@@ -117,6 +171,48 @@
         console.log('create department project  err', error);
     }
   }
+
+  // Lấy danh sách nhân viên từ backend
+const handleGetEmployees = async () => {
+  try {
+    const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEES(departmentId), {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (response.status === 200) {
+      employees.data = response.data.result // Cập nhật danh sách nhân viên
+    }
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+  }
+};
+
+// Hàm thêm nhân viên vào dự án
+const addEmployeesToProject = async () => {
+  try {
+    const response = await axios.post(API_ENDPOINTS.ADD_EMPLOYEES_TO_PROJECT(projectId),
+      selectedEmployees.value
+    , {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (response.status === 200) {
+      console.log("Nhân viên đã được thêm vào dự án.");
+      showEmployeeSelectionModal.value = false; // Đóng modal sau khi thêm thành công
+    }
+  } catch (error) {
+    console.error('Error adding employees to project:', error);
+  }
+};
+
+// Mở modal khi nhấn "Chọn nhân viên"
+const openEmployeeSelectionModal = (projectId) => {
+  showEmployeeSelectionModal.value = true;
+  handleGetEmployees(); // Lấy danh sách nhân viên khi modal được mở
+};
+
   
   onMounted(() => {
     handlegetAllByDepartmentIdIdAndProjectType();
@@ -308,5 +404,88 @@ input, select, textarea {
   transition: border-color 0.3s ease;
 }
 
-  </style>
+/* Modal Chọn nhân viên */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  width: 600px;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f4f4f9;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 48%;
+  font-size: 16px;
+}
+
+.modal-buttons button[type="button"] {
+  background-color: #f44336;
+}
+
+.modal-buttons button:hover {
+  opacity: 0.8;
+}
+
+.modal-buttons button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+.modal-buttons button[type="button"]:hover {
+  background-color: #d32f2f;
+}
+
+
+</style>
   

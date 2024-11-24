@@ -46,7 +46,8 @@ const API_ENDPOINTS = {
 
     //project
     GET_PROJECTBDP: (departmentId) =>`http://localhost:8080/project/getallbdp/${departmentId}`,
-    CREATE_DEPARTMENTPROJECT: (departmentId) =>`http://localhost:8080/project/create/${departmentId}`
+    CREATE_DEPARTMENTPROJECT: (departmentId) =>`http://localhost:8080/project/create/${departmentId}`,
+    GET_PROJECTBYID: (projectId) => `http://localhost:8080/project/get/${projectId}`
 
 
   };
