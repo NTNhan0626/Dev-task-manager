@@ -6,7 +6,7 @@
     </div>
     <div class="header-items-right">
       <IconAler ></IconAler>
-      <p>username</p>
+      <p> Xin chào:{{ userName }}</p>
       <img src="#" alt="avatar" class="avatar" @click="toggleDropdown">
     </div>
 
@@ -25,6 +25,7 @@ import { computed, ref } from 'vue';
 import IconAler from './icons/IconAler.vue';
 import { RouterLink } from 'vue-router';
 
+const userName = sessionStorage.getItem("username")
 const isDropdownOpen = ref(false)
 
 const toggleDropdown = ()=>{

@@ -7,11 +7,12 @@
         <div class="project" v-for="project in departmentProjectResponse.data" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
           <p class="project-name">{{ project.projectName }}</p>
           <p class="project-id">Mã dự án: {{ project.projectId }}</p>
-          <p class="created-date">Ngày tạo: {{ project.createdDate }}</p>
-          <p class="start-date" v-if="project.startDate !== ''">Ngày bắt đầu: {{ project.startDate }}</p>
-          <p class="end-date">Ngày kết thúc: {{ project.endDate }}</p>
-          <p class="actual-end-date" v-if="project.actualEndDate !== ''">Ngày hoàn thành: {{ project.actualEndDate }}</p>
+          <p class="created-date">Ngày tạo: {{ formatDate(project.createdDate) }}</p>
+          <p class="start-date">Ngày bắt đầu:{{ formatDate(project.startDate) }}</p>
+          <p class="end-date">Ngày kết thúc: {{ formatDate(project.endDate) }}</p>
+          <p class="actual-end-date">Ngày hoàn thành: {{ formatDate(project.actualEndDate) }}</p>
           <p class="status">Trạng thái: {{ project.status }}</p>
+          <p class="status">Tình trạng: {{ project.projectCondition }}</p>
           <p class="progress">Tiến độ: {{ project.progress }}%</p>
 
           <div class="project-action" v-if="showProjectAction === project.projectId">
@@ -20,9 +21,31 @@
               params:{projectId:project.projectId}
             }">Chi tiết</RouterLink></button>
             <button @click="openEmployeeSelectionModal(project.projectId)">Chọn nhân viên</button>
-            <button>Tạm dừng</button>
-            <button>Hủy</button>
-
+            <button v-if="project.projectCondition === 'Active'" @click.stop="openUseModal('pausedProject',project.projectId)">Tạm dừng</button>
+            <button v-if="project.projectCondition === 'Paused'" @click.stop="openUseModal('continuedProject',project.projectId)">Tiếp tục</button>
+            <button @click.stop="openUseModal('cancelledProject',project.projectId)">Hủy</button>
+          </div>
+          
+          <div v-if="isUseModalVisible === project.projectId" class="modal-overlay">
+            <div class="modal">
+                <h2 v-if="usesActionType === 'pausedProject'">Tạm dừng dự án "{{ project.projectName }}"</h2>
+                <h2 v-if="usesActionType === 'continuedProject'">Tiếp tục dự án "{{ project.projectName }}"</h2>
+                <h2 v-if="usesActionType === 'cancelledProject'">Hủy dự án "{{ project.projectName }}"</h2>
+                <!-- Nội dung modal thay đổi theo action -->
+                <div v-if="usesActionType === 'pausedProject'">
+                  <p style="font-weight: bold;" >bạn chắc chắn muốn tạm dừng ?</p>
+                </div>
+                <div v-if="usesActionType === 'continuedProject'">
+                  <p style="font-weight: bold;" >bạn chắc chắn muốn tiếp tục dự án ?</p>
+                </div>
+                <div v-if="usesActionType === 'cancelledProject'">
+                  <p style="font-weight: bold;" >bạn chắc chắn hủy dự án?</p>
+                </div>
+                <div class="form-actions">
+                  <button class="btn-confirm" @click.stop="submitAction(project.projectId)">Xác nhận</button>
+                  <button class="btn-cancel" @click.stop="closeUseModal(project.projectId)">Hủy</button>
+                </div>
+            </div>
           </div>
 
         </div>
@@ -48,7 +71,7 @@
             </form>
         </div>
       </div>
-
+      
       <div v-if="showEmployeeSelectionModal" class="modal-overlay">
         <div class="modal-content">
           <h3>Chọn nhân viên tham gia dự án</h3>
@@ -57,20 +80,23 @@
               <tr>
                 <th></th>
                 <th>Tên nhân viên</th>
-                <th>Chức vụ</th>
-                <th>Bằng cấp</th>
+                <!-- <th>Chức vụ</th> -->
+                <!-- <th>Bằng cấp</th> -->
                 <th>Chuyên môn</th>
+                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="employee in employees" :key="employee.username">
+              <tr v-for="employee in employees.data" :key="employee.username">
                 <td>
-                  <input type="checkbox" v-model="selectedEmployees" :value="employee.username" />
+                  <input type="checkbox" v-model="selectedEmployees" :value="employee.accountId" />
                 </td>
                 <td>{{ employee.username }}</td>
-                <td>{{ employee.position }}</td>
-                <td>{{ employee.degree }}</td>
-                <td>{{ employee.specialization }}</td>
+                <!-- <td>{{ employee.position }}</td>
+                <td>{{ employee.degree }}</td> -->
+                <td>{{ employee.specializations }}</td>
+                <td>{{ employee.statusProject }}</td>
+                
               </tr>
             </tbody>
           </table>
@@ -94,8 +120,9 @@
     const departmentName = sessionStorage.getItem("departmentName");
     const departmentId = sessionStorage.getItem("departmentId");
     const token = sessionStorage.getItem("token");
-  
+    const selectedProjectId = ref(null)
     const showmodalCreateDepartmentProject = ref(false);
+  
 
     const showProjectAction = ref(null)
     
@@ -172,6 +199,19 @@ const handleCreateDepartmentProject = async () =>{
     }
   }
 
+  const formatDate = (date) => {
+  if (!date || isNaN(new Date(date).getTime())) {
+    return 'Chưa xác định'; // Giá trị mặc định nếu `date` không hợp lệ
+  }
+  
+  const formattedDate = new Date(date);
+  const year = formattedDate.getFullYear();
+  const month = String(formattedDate.getMonth() + 1).padStart(2, '0'); // Thêm 1 vì tháng trong JavaScript bắt đầu từ 0
+  const day = String(formattedDate.getDate()).padStart(2, '0'); // Đảm bảo ngày có 2 chữ số
+
+  return `${year}-${month}-${day}`; // Trả về ngày theo định dạng YYYY-MM-DD
+};
+
   // Lấy danh sách nhân viên từ backend
 const handleGetEmployees = async () => {
   try {
@@ -181,17 +221,27 @@ const handleGetEmployees = async () => {
       }
     });
     if (response.status === 200) {
+      console.log("get account in department success")
       employees.data = response.data.result // Cập nhật danh sách nhân viên
     }
   } catch (error) {
-    console.error('Error fetching employees:', error);
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('get account  err', error);
   }
 };
 
 // Hàm thêm nhân viên vào dự án
 const addEmployeesToProject = async () => {
   try {
-    const response = await axios.post(API_ENDPOINTS.ADD_EMPLOYEES_TO_PROJECT(projectId),
+    const response = await axios.post(API_ENDPOINTS.CREATE_PROJECTDETAIL(selectedProjectId.value),
       selectedEmployees.value
     , {
       headers: {
@@ -201,25 +251,164 @@ const addEmployeesToProject = async () => {
     if (response.status === 200) {
       console.log("Nhân viên đã được thêm vào dự án.");
       showEmployeeSelectionModal.value = false; // Đóng modal sau khi thêm thành công
+      selectedProjectId.value =null
     }
   } catch (error) {
-    console.error('Error adding employees to project:', error);
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('create project detail err', error);
   }
 };
 
 // Mở modal khi nhấn "Chọn nhân viên"
 const openEmployeeSelectionModal = (projectId) => {
   showEmployeeSelectionModal.value = true;
+  selectedProjectId.value = projectId
   handleGetEmployees(); // Lấy danh sách nhân viên khi modal được mở
 };
+//modal dùng chung
+const openUseModal = (type,projectId) => {
+  usesActionType.value = type;
+  
+  isUseModalVisible.value = projectId;
+};
+
+// Đóng modal
+const closeUseModal = () => {
+  isUseModalVisible.value = false;
+};
+const usesActionType = ref('')
+const isUseModalVisible = ref(false)
+
+// project pause requets 
+const projectUpdatesPauseProject = reactive({
+  projectCondition :'Paused',
+    
+  });
+// project canceld requets 
+const projectUpdateCancelledProject = reactive({
+  projectCondition :'Canceled',
+    
+  });
+// project continued requets 
+const projectUpdateContinuedProject = reactive({
+  projectCondition :'Active',
+    
+  });
+  
+
+// Xử lý hành động xác nhận
+const submitAction = async (projectId) => {
+  if (usesActionType.value === "pausedProject") {
+    console.log("call handlePausedProject")
+    await handlePausedProject(projectId)
+    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    
+    
+  } else if (usesActionType.value === "cancelledProject") {
+    console.log("call handleProjectCancelled");
+    
+    await handleProjectCancelled(projectId)
+    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    
+  } else if (usesActionType.value === "continuedProject") {
+    console.log("call handleProjectContinued");
+    
+    await handleProjectContinued(projectId)
+    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    
+  }
+
+  closeUseModal(); // Đóng modal sau khi xử lý
+};
+const handlePausedProject = async(projectId) =>{
+  try {
+    const response = await axios.put(API_ENDPOINTS.UPDATE_PROJECT(projectId),projectUpdatesPauseProject,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("pause project success")
+     
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('pause project  err', error);
+  }
+}
+
+const handleProjectCancelled = async(projectId) =>{
+  try {
+    const response = await axios.put(API_ENDPOINTS.UPDATE_PROJECT(projectId),projectUpdateCancelledProject,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("cancelled project success")
+     
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('cancelled project  err', error);
+  }
+}
+const handleProjectContinued = async(projectId) =>{
+  try {
+    const response = await axios.put(API_ENDPOINTS.UPDATE_PROJECT(projectId),projectUpdateContinuedProject,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("continued project success")
+     
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('continued project  err', error);
+  }
+}
 
   
-  onMounted(() => {
-    handlegetAllByDepartmentIdIdAndProjectType();
+onMounted(() => {
+  handlegetAllByDepartmentIdIdAndProjectType();
   });
-  </script>
+</script>
   
-  <style scoped>
+<style scoped>
   .project-manager-content {
     font-family: Arial, sans-serif;
     padding: 20px;
@@ -405,18 +594,7 @@ input, select, textarea {
 }
 
 /* Modal Chọn nhân viên */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+
 
 .modal-content {
   background: #ffffff;
@@ -486,6 +664,52 @@ th {
   background-color: #d32f2f;
 }
 
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.modal label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.modal input,
+.modal textarea,
+.modal select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn-confirm {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
 
 </style>
   

@@ -39,6 +39,8 @@ const handleLogin = async() => {
             sessionStorage.setItem('departmentId',response.data.result.departmentId)
             sessionStorage.setItem('token',response.data.result.token)
             sessionStorage.setItem('accountId',response.data.result.accountId)
+            sessionStorage.setItem('username',response.data.result.userName)
+            
             router.push('/home')
         }
     } catch (error) {

@@ -82,6 +82,12 @@ const router = createRouter({
           path:'project/projectdetail/:projectId',
           name:'project-detail',
           component:() => import('../views/project-manager/ProjectDetail.vue')
+        },
+
+        {
+          path:'task/:projectId',
+          name:'task',
+          component:() => import('../views/task/Task.vue')
         }
       ],
     },

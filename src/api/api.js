@@ -46,8 +46,33 @@ const API_ENDPOINTS = {
 
     //project
     GET_PROJECTBDP: (departmentId) =>`http://localhost:8080/project/getallbdp/${departmentId}`,
+    GET_PROJECTBAC: (accountId) =>`http://localhost:8080/project/getallbac/${accountId}`,
     CREATE_DEPARTMENTPROJECT: (departmentId) =>`http://localhost:8080/project/create/${departmentId}`,
-    GET_PROJECTBYID: (projectId) => `http://localhost:8080/project/get/${projectId}`
+    GET_PROJECTBYID: (projectId) => `http://localhost:8080/project/get/${projectId}`,
+    GET_EMPLOYEES:(departmentId) => `http://localhost:8080/departmentdetail/getac/${departmentId}`,
+    UPDATE_PROJECT:(projectId) =>`http://localhost:8080/project/update/${projectId}`,
+      // dựu án liên phòng ban
+    CREATE_INTERDEPARTMENTALPROJECT: 'http://localhost:8080/project/create/interdepartmentalproject',
+    GET_INTERDEPARTMENTALPROJECT:`http://localhost:8080/project/get/interdepartmentalproject`,
+    //projectDetail nhân viên trong dự án
+    CREATE_PROJECTDETAIL:(projectId) => `http://localhost:8080/projectdetail/create/${projectId}`,
+
+    //task
+    GET_TASKINPROJECT: (projectId) =>`http://localhost:8080/project/gettask/${projectId}`,
+    GET_ACCOUNTINPROJECT: (projectId) =>`http://localhost:8080/project/getaccount/${projectId}`,
+    
+    CREATE_TASK: (projectId) =>`http://localhost:8080/task/create/${projectId}`,
+    UPDATE_TASK:(taskId) =>`http://localhost:8080/task/update/${taskId}`,
+    UPDATE_TASKPROGRESS:(taskId) =>`http://localhost:8080/task/update/progress/${taskId}`,
+    UPDATE_START_TASK:(taskId) =>`http://localhost:8080/task/update/${taskId}`,
+    
+
+    //taskdetail
+    CREATE_TASKDETAIL:(taskId,managerTaskId) => `http://localhost:8080/taskdetail/create/${taskId}/${managerTaskId}`,
+    //logwork
+    CREATE_LOGWORK: (taskId) =>`http://localhost:8080/logwork/create/${taskId}`,
+    GET_LOGWORK: (taskId) =>`http://localhost:8080/logwork/get/${taskId}`,
+    UPDATESTATUS_LOGWORK: (logwordId) =>`http://localhost:8080/logwork/updatestatus/${logwordId}`,
 
 
   };
