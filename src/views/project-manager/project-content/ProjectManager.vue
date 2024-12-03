@@ -2,9 +2,9 @@
     <div class="project-manager-content">
       <h3>Phòng ban: <span class="department-name">{{ departmentName }}</span></h3>
       <button class="create-project-button" @click="showmodalCreateDepartmentProject = true" >Tạo dự án mới</button>
-      <p class="projects-title">Các dự án hiện tại:</p>
+      <p class="projects-title">Các dự án phòng ban:</p>
       <div class="projects">
-        <div class="project" v-for="project in departmentProjectResponse.data" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
+        <div class="project" v-for="project in departmentalProject" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
           <p class="project-name">{{ project.projectName }}</p>
           <p class="project-id">Mã dự án: {{ project.projectId }}</p>
           <p class="created-date">Ngày tạo: {{ formatDate(project.createdDate) }}</p>
@@ -31,6 +31,8 @@
                 <h2 v-if="usesActionType === 'pausedProject'">Tạm dừng dự án "{{ project.projectName }}"</h2>
                 <h2 v-if="usesActionType === 'continuedProject'">Tiếp tục dự án "{{ project.projectName }}"</h2>
                 <h2 v-if="usesActionType === 'cancelledProject'">Hủy dự án "{{ project.projectName }}"</h2>
+                <h2 v-if="usesActionType === 'approveAccounts'">Xác nhận duyệt nhân viên</h2>
+
                 <!-- Nội dung modal thay đổi theo action -->
                 <div v-if="usesActionType === 'pausedProject'">
                   <p style="font-weight: bold;" >bạn chắc chắn muốn tạm dừng ?</p>
@@ -41,6 +43,9 @@
                 <div v-if="usesActionType === 'cancelledProject'">
                   <p style="font-weight: bold;" >bạn chắc chắn hủy dự án?</p>
                 </div>
+                <div v-if="usesActionType === 'approveAccounts'">
+                  <p style="font-weight: bold;" >bạn chắc chắn duyệt các nhân viên được chọn?</p>
+                </div>
                 <div class="form-actions">
                   <button class="btn-confirm" @click.stop="submitAction(project.projectId)">Xác nhận</button>
                   <button class="btn-cancel" @click.stop="closeUseModal(project.projectId)">Hủy</button>
@@ -50,7 +55,44 @@
 
         </div>
       </div>
+      <!-- hiển thị dụư án liên phòng ban -->
+      <p class="projects-title">Các dự án liên phòng ban:</p>
+      <div class="projects">
+        <div class="project" v-for="project in interDepartmentalProject" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
+          <p class="project-name">{{ project.projectName }}</p>
+          <p class="project-id">Mã dự án: {{ project.projectId }}</p>
+          <p class="created-date">Ngày tạo: {{ project.createdDate }}</p>
+          <p class="start-date" v-if="project.startDate !== ''">Ngày bắt đầu: {{ project.startDate }}</p>
+          <p class="end-date">Ngày kết thúc: {{ project.endDate }}</p>
+          <p class="actual-end-date" v-if="project.actualEndDate !== ''">Ngày hoàn thành: {{ project.actualEndDate }}</p>
+          <p class="status">Trạng thái: {{ project.status }}</p>
+          <p class="progress">Tiến độ: {{ project.progress }}%</p>
 
+          <div class="project-action" v-if="(showProjectAction === project.projectId)">
+            <button @click.stop="openModalAccountResponse(project.projectId)" >Xét duyệt nhân viên</button>
+          </div>
+
+          <div class="project-action" v-if="(showProjectAction === project.projectId && project.projectDetailResponses.map((projectdetail)=>projectdetail.accountId).includes(accountId))">
+            <button><RouterLink :to="{
+                name:'task',
+                params: { projectId: project.projectId }
+            }">Công việc</RouterLink></button>
+          </div>
+
+          <div class="project-action" v-if="(showProjectAction === project.projectId && accountId === project.projectManagerId)" >
+            <button><RouterLink :to="{
+              name:'project-detail',
+              params:{projectId:project.projectId}
+            }">Chi tiết</RouterLink></button>
+            <button @click="openEmployeeSelectionModal(index,project.projectId)">Chọn nhân viên</button>
+            <button v-if="project.projectCondition === 'Active'" @click.stop="openUseModal('pausedProject',project.projectId)">Tạm dừng</button>
+            <button v-if="project.projectCondition === 'Paused'" @click.stop="openUseModal('continuedProject',project.projectId)">Tiếp tục</button>
+            <button @click.stop="openUseModal('cancelledProject',project.projectId)">Hủy</button>
+          </div>
+
+        </div>
+      </div>
+      <!-- modal tạo dự án mới -->
       <div v-if="showmodalCreateDepartmentProject" class="modal-overlay">
         <div class="modal-content">
             <h3>Tạo dự án mới</h3>
@@ -71,7 +113,7 @@
             </form>
         </div>
       </div>
-      
+      <!-- modal thêm nhân viên vào dựj án  -->
       <div v-if="showEmployeeSelectionModal" class="modal-overlay">
         <div class="modal-content">
           <h3>Chọn nhân viên tham gia dự án</h3>
@@ -107,22 +149,75 @@
           </div>
         </div>
       </div>
+      <!-- modal xác nhận duyệt nhân viên -->
+      <div v-if="showAccountsRequestModal" class="modal-overlay">
+        <div class="modal-content">
+          <h3>Chọn nhân viên tham gia dự án</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Tên tài khoản</th>
+                <th>Duyệt</th>
+                <th>Không duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="account in accountsRequets.data" :key="account.accountId">
+               
+                <td>{{ account.userName }}</td>
+               
+                <td>
+                  <input type="radio" :name="'status-' + account.userName" value="inproject" v-model="account.status" />
+                </td>
+                <td>
+                  <input type="radio" :name="'status-' + account.userName" value="reject" v-model="account.status" />
+                </td>
+                
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="modal-buttons">
+            <button type="button" @click.stop="openUseModal('approveAccounts',null)">Duyệt nhân viên</button>
+            <button type="button" @click="closeModalAccountResponse()">Hủy</button>
+          </div>
+        </div>
+      </div>
+      <!-- modal dùng chung cắt ra từ modal để xử lí các thao tasc của project như hoàn thành ...-->
+      <div v-if="isUseModalVisible" class="modal-overlay">
+            <div class="modal">
+                
+                <h2 v-if="usesActionType === 'approveAccounts'">Xác nhận duyệt nhân viên</h2>
+
+                <!-- Nội dung modal thay đổi theo action -->
+                
+                <div v-if="usesActionType === 'approveAccounts'">
+                  <p style="font-weight: bold;" >bạn chắc chắn duyệt các nhân viên được chọn?</p>
+                </div>
+                <div class="form-actions">
+                  <button class="btn-confirm" @click.stop="submitAction(null)">Xác nhận</button>
+                  <button class="btn-cancel" @click.stop="closeUseModal(null)">Hủy</button>
+                </div>
+            </div>
+        </div>
+
   </div>
 </template>
   
 <script setup>
   import API_ENDPOINTS from '@/api/api';
   import axios, { AxiosHeaders } from 'axios';
+  import { computed } from 'vue';
   import { onMounted, reactive, ref } from 'vue';
   import { RouterLink } from 'vue-router';
-    
-    const accountId = sessionStorage.getItem("accountId")
+   
+    const accountId = Number(sessionStorage.getItem("accountId"))
     const departmentName = sessionStorage.getItem("departmentName");
     const departmentId = sessionStorage.getItem("departmentId");
     const token = sessionStorage.getItem("token");
     const selectedProjectId = ref(null)
     const showmodalCreateDepartmentProject = ref(false);
-  
+    const showAccountsRequestModal = ref(null)
 
     const showProjectAction = ref(null)
     
@@ -132,11 +227,25 @@
     const selectedEmployees = ref([]); // Mảng chứa các nhân viên được chọn
     const showEmployeeSelectionModal = ref(false); // Hiển thị modal chọn nhân viên
 
+    const accountsRequets = reactive({
+      data:[]
+    }) //danh sách các nhân viên chờ duyệt
+    
+
 
     const departmentProjectResponse = reactive({
         data: []
     });
 
+    const departmentalProject = computed(() =>{
+      return departmentProjectResponse.data.filter((project) => project.projectType === true )
+    }) 
+
+
+    const interDepartmentalProject = computed(() =>{
+      console.log(departmentProjectResponse.data.filter((project) => project.projectType === false ))
+      return departmentProjectResponse.data.filter((project) => project.projectType === false )
+    }) 
     const newProject = reactive({
         projectName: '',
         description: '',
@@ -213,9 +322,9 @@ const handleCreateDepartmentProject = async () =>{
 };
 
   // Lấy danh sách nhân viên từ backend
-const handleGetEmployees = async () => {
+const handleGetEmployees = async (projectId) => {
   try {
-    const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEES(departmentId), {
+    const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEESINDEPARTMENTNOTINPROJECT(projectId,departmentId), {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -271,13 +380,17 @@ const addEmployeesToProject = async () => {
 const openEmployeeSelectionModal = (projectId) => {
   showEmployeeSelectionModal.value = true;
   selectedProjectId.value = projectId
-  handleGetEmployees(); // Lấy danh sách nhân viên khi modal được mở
+  handleGetEmployees(projectId); // Lấy danh sách nhân viên khi modal được mở
 };
 //modal dùng chung
 const openUseModal = (type,projectId) => {
   usesActionType.value = type;
+  if(usesActionType.value === 'approveAccounts'){
+    isUseModalVisible.value = true
+  }else{
+    isUseModalVisible.value = projectId;
+  }
   
-  isUseModalVisible.value = projectId;
 };
 
 // Đóng modal
@@ -324,6 +437,9 @@ const submitAction = async (projectId) => {
     await handleProjectContinued(projectId)
     handlegetAllByDepartmentIdIdAndProjectType(departmentId)
     
+  }else if (usesActionType.value === "approveAccounts"){
+    console.log("call handle approves employee to project")
+    handleApprovesEmployeesToProject();
   }
 
   closeUseModal(); // Đóng modal sau khi xử lý
@@ -401,6 +517,67 @@ const handleProjectContinued = async(projectId) =>{
         console.log('continued project  err', error);
   }
 }
+const openModalAccountResponse = (projectId) =>{
+  showAccountsRequestModal.value = true
+  handleGetAccountsRequets(projectId)
+} 
+const closeModalAccountResponse = () =>{
+  showAccountsRequestModal.value = false
+  accountsRequets.data = []
+}
+
+const handleGetAccountsRequets = async (projectId) =>{
+  try {
+    const response = await axios.get(API_ENDPOINTS.GETACCOUNTSREQUEST(projectId),{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("get accounts request success")
+      accountsRequets.data = response.data.result
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('get accounts request  err', error);
+    
+  }
+}
+
+const handleApprovesEmployeesToProject = async () =>{
+  try {
+    const response = await axios.put(API_ENDPOINTS.UPDATE_PROJECTDETAIL,accountsRequets.data,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("approve account success")
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('approve  accounts  err', error);
+    
+  }
+}
+
+
 
   
 onMounted(() => {
@@ -625,9 +802,11 @@ th, td {
   padding: 12px;
   text-align: left;
   border-bottom: 1px solid #ddd;
+  
 }
 
 th {
+  text-align: center;
   background-color: #f4f4f9;
 }
 
@@ -710,6 +889,17 @@ th {
   border-radius: 8px;
   cursor: pointer;
 }
+td {
+  text-align: center; /* Căn giữa nội dung trong ô */
+  vertical-align: middle; /* Đảm bảo nội dung căn giữa theo chiều dọc */
+}
+
+input[type="radio"] {
+  display: inline-block;
+  vertical-align: middle; /* Căn giữa so với dòng chữ */
+  margin: 0; /* Loại bỏ khoảng cách thừa */
+}
+
 
 </style>
   

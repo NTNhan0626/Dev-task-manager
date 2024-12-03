@@ -18,6 +18,7 @@ import ProjectStaff from './project-content/ProjectStaff.vue';
 
 
 const typeRoles = sessionStorage.getItem("typeRoles")
+
 const departmentName = sessionStorage.getItem("departmentName")
 
 </script>

@@ -1,9 +1,10 @@
 <template>
     <div class="project-manager-content">
-      <h3>Phòng ban: <span class="department-name">{{ departmentName }}</span></h3>
-      <p class="projects-title">Các dự án hiện tại:</p>
+      <h3>Các dự án cá có tham gia:</h3>
+
+      <p class="projects-title">Các dự án phòng ban:</p>
       <div class="projects">
-        <div class="project" v-for="project in projectResponse.data" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
+        <div class="project" v-for="project in departmentalProject" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
           <p class="project-name">{{ project.projectName }}</p>
           <p class="project-id">Mã dự án: {{ project.projectId }}</p>
           <p class="created-date">Ngày tạo: {{ project.createdDate }}</p>
@@ -22,16 +23,50 @@
 
         </div>
       </div>
+
+      <p class="projects-title">Các dự án liên phòng ban:</p>
+      <div class="projects">
+        <div class="project" v-for="project in interDepartmentalProject" :key="project.projectId" @click="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
+          <p class="project-name">{{ project.projectName }}</p>
+          <p class="project-id">Mã dự án: {{ project.projectId }}</p>
+          <p class="created-date">Ngày tạo: {{ project.createdDate }}</p>
+          <p class="start-date" v-if="project.startDate !== ''">Ngày bắt đầu: {{ project.startDate }}</p>
+          <p class="end-date">Ngày kết thúc: {{ project.endDate }}</p>
+          <p class="actual-end-date" v-if="project.actualEndDate !== ''">Ngày hoàn thành: {{ project.actualEndDate }}</p>
+          <p class="status">Trạng thái: {{ project.status }}</p>
+          <p class="progress">Tiến độ: {{ project.progress }}%</p>
+
+          <div class="project-action" v-if="(showProjectAction === project.projectId && accountId !==project.projectManagerId)">
+            <button><RouterLink :to="{
+                name:'interdepartmental-task',
+                params: { projectId: project.projectId }
+            }">Công việc</RouterLink></button>
+          </div>
+
+          <div class="project-action" v-if="(showProjectAction === project.projectId && accountId === project.projectManagerId)" >
+            <button><RouterLink :to="{
+              name:'project-detail',
+              params:{projectId:project.projectId}
+            }">Chi tiết</RouterLink></button>
+            <button @click="openEmployeeSelectionModal(index,project.projectId)">Chọn nhân viên</button>
+            <button v-if="project.projectCondition === 'Active'" @click.stop="openUseModal('pausedProject',project.projectId)">Tạm dừng</button>
+            <button v-if="project.projectCondition === 'Paused'" @click.stop="openUseModal('continuedProject',project.projectId)">Tiếp tục</button>
+            <button @click.stop="openUseModal('cancelledProject',project.projectId)">Hủy</button>
+          </div>
+
+        </div>
+      </div>
   </div>
 </template>
   
 <script setup>
   import API_ENDPOINTS from '@/api/api';
   import axios, { AxiosHeaders } from 'axios';
-  import { onMounted, reactive, ref } from 'vue';
+  import { computed, onMounted, reactive, ref } from 'vue';
   import { RouterLink } from 'vue-router';
+
     
-const accountId = sessionStorage.getItem("accountId")
+const accountId = Number(sessionStorage.getItem("accountId"))
 const departmentName = sessionStorage.getItem("departmentName");
 const departmentId = sessionStorage.getItem("departmentId");
 const token = sessionStorage.getItem("token");
@@ -40,6 +75,16 @@ const showProjectAction = ref(null)
 const projectResponse = reactive({
     data:[]
 })
+
+const departmentalProject = computed(() =>{
+  return projectResponse.data.filter((project) => project.projectType === true )
+}) 
+
+
+const interDepartmentalProject = computed(() =>{
+  return projectResponse.data.filter((project) => project.projectType === false )
+}) 
+
 
 const handlegetAllByAccountId = async () => {
     try {

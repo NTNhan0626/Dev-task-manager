@@ -1,10 +1,12 @@
 <template>
     <div class="project-manager-content">
-      <h3>Phòng ban: <span class="department-name">{{ departmentName }}</span></h3>
+      <h3><span> Dự án liên phòng ban </span></h3> 
       <button class="create-project-button" @click.self="showmodalCreateInterDepartmentalProject = true" >Tạo dự án liên phòng ban</button>
       <p class="projects-title">Các dự án hiện tại:</p>
-      <div class="projects">
-        <div class="project" v-for="project in interDepartmentalProjectResponse.data" :key="project.projectId" @click.self="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId">
+      <div class="projects" v-for="(project,index) in interDepartmentalProjectResponse.data" :key="project.projectId"  >
+        <div class="project"
+        @click.self="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId"
+        v-if="accountId === project.createrId ">
           <p class="project-name">{{ project.projectName }}</p>
           <p class="project-id">Mã dự án: {{ project.projectId }}</p>
           <p class="created-date">Ngày tạo: {{ formatDate(project.createdDate) }}</p>
@@ -20,7 +22,7 @@
               name:'project-detail',
               params:{projectId:project.projectId}
             }">Chi tiết</RouterLink></button>
-            <button @click="openEmployeeSelectionModal(project.projectId)">Chọn nhân viên</button>
+            <button @click="openEmployeeSelectionModal(index,project.projectId)">Chọn nhân viên</button>
             <button v-if="project.projectCondition === 'Active'" @click.stop="openUseModal('pausedProject',project.projectId)">Tạm dừng</button>
             <button v-if="project.projectCondition === 'Paused'" @click.stop="openUseModal('continuedProject',project.projectId)">Tiếp tục</button>
             <button @click.stop="openUseModal('cancelledProject',project.projectId)">Hủy</button>
@@ -85,6 +87,15 @@
       <div v-if="showEmployeeSelectionModal" class="modal-overlay">
         <div class="modal-content">
           <h3>Chọn nhân viên tham gia dự án</h3>
+          <div class="select-department">
+            <label>
+                Phòng ban:
+                <select v-model="selectedDepartmentId">
+                    <option v-for="department in interDepartmentalProjectResponse.data[indexProject].projectDepartmentDetailResponses" :value="department.departmentId">{{department.departmentName}}</option>
+                </select>
+            </label>
+          </div>
+            
           <table>
             <thead>
               <tr>
@@ -112,7 +123,7 @@
           </table>
 
           <div class="modal-buttons">
-            <button type="button" @click="addEmployeesToProject">Thêm nhân viên</button>
+            <button type="button" @click="addEmployeesToProject">Gửi yêu cầu</button>
             <button type="button" @click="showEmployeeSelectionModal = false">Hủy</button>
           </div>
         </div>
@@ -123,16 +134,16 @@
 <script setup>
   import API_ENDPOINTS from '@/api/api';
   import axios, { AxiosHeaders } from 'axios';
-  import { onMounted, reactive, ref } from 'vue';
+  import { onMounted, reactive, ref, watch } from 'vue';
   import { RouterLink } from 'vue-router';
     
-    const accountId = sessionStorage.getItem("accountId")
+    const accountId = Number(sessionStorage.getItem("accountId"))
     const departmentName = sessionStorage.getItem("departmentName");
     const departmentId = sessionStorage.getItem("departmentId");
     const token = sessionStorage.getItem("token");
     const selectedProjectId = ref(null)
     const showmodalCreateInterDepartmentalProject = ref(false);
-  
+    const indexProject = ref(null)
 
     const showProjectAction = ref(null)
     
@@ -146,6 +157,16 @@
     const interDepartmentalProjectResponse = reactive({
         data: []
     });
+    
+
+    // id của phòng được chọn để thêm nhan viên
+    const selectedDepartmentId = ref(null)
+
+    watch(selectedDepartmentId,(newValue,oldValue) =>{
+        if(newValue){
+            handleGetEmployeesInDepartment(newValue)
+        }
+    })
     // danh sách tất cả nhân viên dùng để chỉ đinjh người quản lí 
     const accountsResponse = reactive({ 
         data:[]
@@ -162,10 +183,11 @@
         createdDate:new Date(),
         startDate: '',
         endDate: '',
-        status: 'Chuẩn bị',
+        status: 'Pending',
         progress: 0,
         projectManagerId: null,
         departmentIds: [],
+        createrId: Number (accountId),
         projectCondition:'Active'
     });
 
@@ -180,6 +202,8 @@
       if (response.status === 200) {
         console.log("get inter department project success");
         interDepartmentalProjectResponse.data = response.data.result;
+        console.log(interDepartmentalProjectResponse.data)
+       
       }
     } catch (error) {
         if (error.response) {
@@ -260,9 +284,9 @@ const handleCreateInterDepartmentalProject = async () =>{
 };
 
   // Lấy danh sách nhân viên từ backend
-const handleGetEmployees = async () => {
+const handleGetEmployeesInDepartment = async (departmentId) => {
   try {
-    const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEES(departmentId), {
+    const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEESINDEPARTMENTNOTINPROJECT(selectedProjectId.value,departmentId), {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -270,6 +294,7 @@ const handleGetEmployees = async () => {
     if (response.status === 200) {
       console.log("get account in department success")
       employees.data = response.data.result // Cập nhật danh sách nhân viên
+      console.log(employees.data)
     }
   } catch (error) {
     if (error.response) {
@@ -288,7 +313,7 @@ const handleGetEmployees = async () => {
 // Hàm thêm nhân viên vào dự án
 const addEmployeesToProject = async () => {
   try {
-    const response = await axios.post(API_ENDPOINTS.CREATE_PROJECTDETAIL(selectedProjectId.value),
+    const response = await axios.post(API_ENDPOINTS.CREATE_INTERDEPARTMENTALPROJECTDETAIL(selectedProjectId.value),
       selectedEmployees.value
     , {
       headers: {
@@ -340,10 +365,12 @@ const handleGetAccount = async () =>{
 }
 
 // Mở modal khi nhấn "Chọn nhân viên"
-const openEmployeeSelectionModal = (projectId) => {
+const openEmployeeSelectionModal = (index,projectId) => {
   showEmployeeSelectionModal.value = true;
+  indexProject.value = index
   selectedProjectId.value = projectId
-  handleGetEmployees(); // Lấy danh sách nhân viên khi modal được mở
+
+  
 };
 //modal dùng chung
 const openUseModal = (type,projectId) => {
@@ -381,20 +408,20 @@ const submitAction = async (projectId) => {
   if (usesActionType.value === "pausedProject") {
     console.log("call handlePausedProject")
     await handlePausedProject(projectId)
-    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    handlegetInterDepartmentalProject()
     
     
   } else if (usesActionType.value === "cancelledProject") {
     console.log("call handleProjectCancelled");
     
     await handleProjectCancelled(projectId)
-    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    handlegetInterDepartmentalProject()
     
   } else if (usesActionType.value === "continuedProject") {
     console.log("call handleProjectContinued");
     
     await handleProjectContinued(projectId)
-    handlegetAllByDepartmentIdIdAndProjectType(departmentId)
+    handlegetInterDepartmentalProject()
     
   }
 

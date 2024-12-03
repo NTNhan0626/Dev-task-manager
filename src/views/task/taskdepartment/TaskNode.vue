@@ -9,7 +9,7 @@
       </span>
       <div class="task-actions" v-if="showTaskAction === task.taskId && (roles.includes('MN') || loginAcountId === task.managerTaskId || loginAcountId === task.parentManagerTaskId) && task.taskCondition==='Active'">
         <button class="btn-details" @click.stop="toggleDetails">🔍 Xem chi tiết</button>
-        <button class="btn-add-child" @click.self="openModal()">➕ Công việc con</button>
+        <button class="btn-add-child" @click.self="openModal(task.taskDetailResponses.length)">➕ Công việc con</button>
         <button v-if="task.taskDetailResponses.length !==1" class="btn-add-child" @click="openEmployeeSelectionModal(task.projectId)">Thêm nhân viên</button>
         <button class="btn-add-child" v-if="(loginAcountId === task.parentManagerTaskId || loginAcountId === task.managerTaskId || roles.includes('MN')) && (task.managerTaskId !==task.parentManagerTaskId)"
         @click.stop="showModalReadLogwork = true , handleGetLogWork(task.taskId)"
@@ -150,12 +150,13 @@
           </tbody>
         </table>
       </div>
-      <div class="taskdetail-actions">
-        <button v-if="task.status !== 'In Progress' && task.status !== 'Completed'" :disabled="task.parentTaskStatus !== 'In Progress'"
+      <div class="taskdetail-actions" v-if="loginAcountId === task.managerTaskId">
+        <button v-if="task.status !== 'In Progress' && task.status !== 'Completed'" 
+        :disabled="task.parentTaskStatus !== 'In Progress' && task.parentTaskStatus !== null"
         @click.stop="openUseModal('startTask')"
         >Bắt đầu</button>
       </div>
-      <div class="taskdetail-actions" v-if="task.status === 'In Progress'">
+      <div class="taskdetail-actions" v-if="task.status === 'In Progress' && loginAcountId === task.managerTaskId">
         <button :disabled="!(roles.includes('MN') || loginAcountId===task.parentManagerTaskId)" @click.stop="showmodalUpdateStask = true">Chỉnh sửa</button>
         <button v-if="loginAcountId===task.managerTaskId" @click="openModalUpdateTaskProgress() ">Cập nhật tiến độ</button>
         <button :disabled="task.progress !== '100' || loginAcountId !==task.managerTaskId"
@@ -437,7 +438,7 @@ const filterAccountResponse = computed(() => {
   console.log(assignedEmployeeIds)
   // Lọc ra nhân viên chưa có trong danh sách taskDetailResponses
   return accountResponse.data.filter(
-    (employee) => !assignedEmployeeIds.includes(employee.accountId)
+    (employee) => (!assignedEmployeeIds.includes(employee.accountId) && employee.statusInProject ==='inproject')
   );
 });
 
@@ -445,7 +446,10 @@ const toggleDetails = () => {
   showDetails.value = !showDetails.value;
 };
 
-const openModal = () => {
+const openModal = (taskDetaillength) => {
+  if(taskDetaillength===1){
+    childTask.value.managerTaskId = loginAcountId;
+  }
   childTask.value.taskParentId = props.task.taskId;
   showModalAddChildTask.value = true;
 };

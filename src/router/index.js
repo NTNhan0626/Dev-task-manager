@@ -83,11 +83,36 @@ const router = createRouter({
           name:'project-detail',
           component:() => import('../views/project-manager/ProjectDetail.vue')
         },
-
+        //department-task
         {
           path:'task/:projectId',
           name:'task',
-          component:() => import('../views/task/Task.vue')
+          component:() => import('../views/task/taskdepartment/Task.vue')
+        },
+        //interdepartmental-task
+        {
+          path:'interdepartmental-task/:projectId',
+          name:'interdepartmental-task',
+          component:() => import('../views/task/interdepartmentaltask/Task.vue')
+        },
+        // tools
+        {
+          path:'tools',
+          name:'tools',
+          component:() => import('../views/tools/ManagerTools.vue')
+        },
+        // get all tool project detail
+        {
+          path:'managerTool',
+          name:'managerTool',
+          component:() => import('../views/tools/ManagerToolsRequest.vue')
+        },
+        //tool request nơi yc công cụ cho dự án
+        {
+          path:'tools/request/:projectId',
+          name:'tools-request',
+          component:() => import('../views/project-manager/ToolRequest.vue')
+
         }
       ],
     },
@@ -100,7 +125,7 @@ const router = createRouter({
 
     {
       path: '/:pathMatch(.*)*', // Để xử lý các đường dẫn không hợp lệ
-      redirect: '/login', // Chuyển hướng đến trang đăng nhập
+      redirect: '/', // Chuyển hướng đến trang đăng nhập
     }
 
   ],

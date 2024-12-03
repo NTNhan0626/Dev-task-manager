@@ -1,10 +1,20 @@
 <template>
     <div class="project-details">
       <h1>Chi tiết dự án</h1>
-        <button><RouterLink :to="{
+        <button v-if="projectResponse.data.projectType"><RouterLink :to="{
           name:'task',
           params:{projectId : projectResponse.data.projectId}
         }">Công việc</RouterLink></button>
+
+        <button v-if="!projectResponse.data.projectType"><RouterLink :to="{
+          name:'interdepartmental-task',
+          params:{projectId : projectResponse.data.projectId}
+        }">Công việc</RouterLink></button>
+
+        <button v-if="loginAccountId === projectResponse.data.projectManagerId"><RouterLink :to="{
+          name:'tools-request',
+          params:{projectId : projectResponse.data.projectId}
+        }">Công cụ</RouterLink></button>
       <!-- Thông tin chung về dự án -->
       <div class="project-info">
         <p><strong>ID dự án:</strong> {{ projectResponse.data.projectId }}</p>
@@ -36,7 +46,7 @@
         >Bắt đầu</button>
 
       </div>
-      <div class="project-action">
+      <div class="project-action"  v-if="projectResponse.data.status === 'Active'">
         <button
         :disabled="projectResponse.data.progress !== '100'"
          @click.stop="openUseModal('projectCompleted')"
@@ -98,6 +108,7 @@ import { RouterLink, useRoute } from 'vue-router';
 const router = useRoute()
 const projectId = router.params.projectId
 console.log(projectId)
+const loginAccountId = Number(sessionStorage.getItem("accountId"))
 const token = sessionStorage.getItem("token")
 
 const usesActionType = ref('')
@@ -141,6 +152,7 @@ const handleGetProject = async () =>{
         if(response.status === 200){
             console.log("get project detail success")
             projectResponse.data = response.data.result
+            console.log(projectResponse.data)
         }
     } catch (error) {
         if (error.response) {

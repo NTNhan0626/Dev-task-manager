@@ -30,6 +30,14 @@
             </ul>
 
           </li>
+          <li @click="toggleMenu('tools')">
+            Quản lí: Công cụ
+            <ul v-if="activeMenu === 'tools'">
+                <li><RouterLink to="/home/tools">Danh sách</RouterLink></li>
+                <li><RouterLink to="/home/managerTool">Phiếu mượn</RouterLink></li>
+            </ul>
+
+          </li>
         </ul>
       </div>
     </footer>

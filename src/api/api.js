@@ -25,6 +25,8 @@ const API_ENDPOINTS = {
     //category
     GET_CATEGORY :'http://localhost:8080/category/getall',
     ADD_CATEGORY :'http://localhost:8080/category/add',
+    //categoryDetail
+    ADD_CATEGORY_DETAIL :(categoryId) =>`http://localhost:8080/categorydetail/create/${categoryId}`,
     //degree
     GET_DEGREE :'http://localhost:8080/degree/getall',
     ADD_DEGREE :'http://localhost:8080/degree/add',
@@ -51,11 +53,19 @@ const API_ENDPOINTS = {
     GET_PROJECTBYID: (projectId) => `http://localhost:8080/project/get/${projectId}`,
     GET_EMPLOYEES:(departmentId) => `http://localhost:8080/departmentdetail/getac/${departmentId}`,
     UPDATE_PROJECT:(projectId) =>`http://localhost:8080/project/update/${projectId}`,
+    GET_EMPLOYEESINDEPARTMENTNOTINPROJECT:(projectId,departmentId) => `http://localhost:8080/project/getaccount/${projectId}/${departmentId}`,
+
+    GETACCOUNTSREQUEST:(projectId) => `http://localhost:8080/projectdetail/get/acrequest/${projectId}`,
       // dựu án liên phòng ban
     CREATE_INTERDEPARTMENTALPROJECT: 'http://localhost:8080/project/create/interdepartmentalproject',
     GET_INTERDEPARTMENTALPROJECT:`http://localhost:8080/project/get/interdepartmentalproject`,
     //projectDetail nhân viên trong dự án
     CREATE_PROJECTDETAIL:(projectId) => `http://localhost:8080/projectdetail/create/${projectId}`,
+    //duyệt nhân viên tham gia dự án
+    UPDATE_PROJECTDETAIL:`http://localhost:8080/projectdetail/update`,
+
+    // quản lí yêu cầu cấp nhân viên cho phòng
+    CREATE_INTERDEPARTMENTALPROJECTDETAIL:(projectId) => `http://localhost:8080/projectdetail/create/interdepartmentalproject/${projectId}`,
 
     //task
     GET_TASKINPROJECT: (projectId) =>`http://localhost:8080/project/gettask/${projectId}`,
@@ -73,7 +83,16 @@ const API_ENDPOINTS = {
     CREATE_LOGWORK: (taskId) =>`http://localhost:8080/logwork/create/${taskId}`,
     GET_LOGWORK: (taskId) =>`http://localhost:8080/logwork/get/${taskId}`,
     UPDATESTATUS_LOGWORK: (logwordId) =>`http://localhost:8080/logwork/updatestatus/${logwordId}`,
-
+    //tool
+    GETALL_TOOL: `http://localhost:8080/tool/getall`,
+    CREATE_TOOL: `http://localhost:8080/tool/create`,
+    UPDATE_TOOL:(toolId) => `http://localhost:8080/tool/update/${toolId}`,
+    //tool project detail
+    GET_ALL_TOOLPROJECTDETAIL:`http://localhost:8080/tooldetail/getall`,
+    GET_TOOLPROJECTDETAILINPROJECT: (projectId) =>`http://localhost:8080/tooldetail/getall/${projectId}`,
+    CREATE_TOOLPROJECTDETAILINPROJECT:`http://localhost:8080/tooldetail/create`,
+    UPDATE_TOOLPRPOJECTDETAIL:(toolProjectDetailId) =>`http://localhost:8080/tooldetail/update/${toolProjectDetailId}`,
+    DELETED_TOOLPROJECTDETAIL:(toolProjectDetailId) =>`http://localhost:8080/tooldetail/delete/${toolProjectDetailId}`,
 
   };
   
