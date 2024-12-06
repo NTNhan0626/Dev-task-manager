@@ -16,9 +16,14 @@
                         <th>
                             Trạng thái
                         </th>
+                        
+                        <th>Ngày tạo</th>
+                        <th>Bằng cấp</th>
+                        <th>Chuyên môn</th>
                         <th>
                             Thao tác
                         </th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -27,6 +32,10 @@
                         <td>{{ account.username }}</td>
                         <td>{{ account.email }}</td>
                         <td>{{ account.status }}</td>
+                        <td>{{ account.dateCreate }}</td>
+                        <td><span v-for="degree in account.detailResponses">{{ degree.degreeName }}, </span></td>
+                        <td><span v-for="specialization in account.specializationDetailResponses">{{ specialization.specializationName }}, </span></td>
+                        
                         <td>Thêm Sửa Xóa</td>
                     </tr>
                 </tbody>

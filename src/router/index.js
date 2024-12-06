@@ -112,7 +112,18 @@ const router = createRouter({
           path:'tools/request/:projectId',
           name:'tools-request',
           component:() => import('../views/project-manager/ToolRequest.vue')
-
+        },
+        //issues
+        {
+          path:'issues/request/:taskId',
+          name:'issues-request',
+          component:() => import('../views/issues/IssuesRequest.vue')
+        },
+        //issues manager
+        {
+          path:'issues/manager/:projectId',
+          name:'issues-manager',
+          component:() => import('../views/issues/ManagerIssuesRequest.vue')
         }
       ],
     },

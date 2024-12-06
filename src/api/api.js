@@ -94,6 +94,20 @@ const API_ENDPOINTS = {
     UPDATE_TOOLPRPOJECTDETAIL:(toolProjectDetailId) =>`http://localhost:8080/tooldetail/update/${toolProjectDetailId}`,
     DELETED_TOOLPROJECTDETAIL:(toolProjectDetailId) =>`http://localhost:8080/tooldetail/delete/${toolProjectDetailId}`,
 
+    //issues
+    GET_ALLISSUESINPROJECT: (projectId) =>`http://localhost:8080/issues/getall/project/${projectId}`,
+    GET_ALLISSUESINTASK: (taskId) =>`http://localhost:8080/issues/getall/task/${taskId}`,
+    CREATE_ISSUES_ISUESDETAIL:(accountId,taskId) =>`http://localhost:8080/issues/create/${accountId}/${taskId}`,
+    UPDATE_ISSUES:(issuesId) =>`http://localhost:8080/issues/update/${issuesId}`,
+    DELETED_ISSUES:(issuesId) =>`http://localhost:8080/issues/delete/${issuesId}`,
+    // task evalution
+    CREATE_TASKEVALUATION:(accountId,taskId) =>`http://localhost:8080/taskevaluation/create/${accountId}/${taskId}`,
+    GET_TASKEVALUATION:(taskId) =>`http://localhost:8080/taskevaluation/get/${taskId}`,
+    UPDATE_TASKEVALUATION:(taskevaliationId) =>`http://localhost:8080/taskevaluation/update/${taskevaliationId}`,
+    DELETE_TASKEVALUATION:(taskevaliationId) =>`http://localhost:8080/taskevaluation/delete/${taskevaliationId}`,
+
+    
+
   };
   
   export default API_ENDPOINTS;

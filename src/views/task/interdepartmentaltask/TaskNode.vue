@@ -9,10 +9,10 @@
       </span>
       <div class="task-actions" v-if="showTaskAction === task.taskId && ((roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) || loginAcountId === task.managerTaskId || loginAcountId === task.parentManagerTaskId || loginAcountId === task.projectManagerId) && task.taskCondition==='Active'">
         <button class="btn-details" @click.stop="toggleDetails">🔍 Xem chi tiết</button>
-        <button class="btn-add-child" @click.self="openModal(task.taskDetailResponses.length)">➕ Công việc con</button>
-        <button v-if="task.taskDetailResponses.length !==1" class="btn-add-child" @click="openEmployeeSelectionModal(task.projectId)">Thêm nhân viên</button>
+        <button v-if="task.taskDetailResponses.length !==1 || task.parentTaskEmployeeSize !==1" class="btn-add-child" @click.self="openModal(task.taskDetailResponses.length)">➕ Công việc con</button>
+        <button v-if="task.taskDetailResponses.length !==1 || task.parentTaskEmployeeSize !==1" class="btn-add-child" @click="openEmployeeSelectionModal(task.projectId)">Thêm nhân viên</button>
 
-        <button class="btn-add-child" v-if="(loginAcountId === task.parentManagerTaskId || loginAcountId === task.managerTaskId || (roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) || loginAcountId === task.projectManagerId) && (task.managerTaskId !==task.parentManagerTaskId || task.taskDetailResponses.length !==1)"
+        <button class="btn-add-child" v-if="(loginAcountId === task.parentManagerTaskId || loginAcountId === task.managerTaskId || (roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) || loginAcountId === task.projectManagerId) && (task.managerTaskId !==task.parentManagerTaskId || task.parentTaskEmployeeSize!==1)"
         @click.stop="showModalReadLogwork = true , handleGetLogWork(task.taskId)"
         >Xem Logwork</button>
         
@@ -124,7 +124,17 @@
   
         <p><strong>Tài khoản phụ trách:</strong> {{ task.parentTaskName }}</p>
       </div>
-  
+      <div>
+        <button v-if="loginAcountId === task.managerTaskId">
+          <RouterLink
+          :to="{
+            name:'issues-request',
+            params:{taskId:task.taskId}
+          }"
+          >Phát sinh</RouterLink>
+          </button>
+      </div>
+      
       <!-- Danh sách nhân viên tham gia dự án -->
       <div class="employee-list">
         <h2>Danh sách nhân viên tham gia</h2>

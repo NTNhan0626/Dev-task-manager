@@ -28,18 +28,16 @@ const account = reactive(
     {
         username :'',
         password:'',
-        email:''
+        email:'',
+        status:'active',
+        dateCreate:new Date()
     }
 )
 
 const handleSigin = async () =>{
     try {
-            const response = await axios.post(API_ENDPOINTS.REGISTER,
-            {
-                username : account.username,
-                password : account.password,
-                email : account.email
-            }
+            const response = await axios.post(API_ENDPOINTS.REGISTER,account
+            
         )
         if(response.status === 200){
             console.log('add account success')

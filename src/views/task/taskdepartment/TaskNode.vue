@@ -9,9 +9,9 @@
       </span>
       <div class="task-actions" v-if="showTaskAction === task.taskId && (roles.includes('MN') || loginAcountId === task.managerTaskId || loginAcountId === task.parentManagerTaskId) && task.taskCondition==='Active'">
         <button class="btn-details" @click.stop="toggleDetails">🔍 Xem chi tiết</button>
-        <button class="btn-add-child" @click.self="openModal(task.taskDetailResponses.length)">➕ Công việc con</button>
-        <button v-if="task.taskDetailResponses.length !==1" class="btn-add-child" @click="openEmployeeSelectionModal(task.projectId)">Thêm nhân viên</button>
-        <button class="btn-add-child" v-if="(loginAcountId === task.parentManagerTaskId || loginAcountId === task.managerTaskId || roles.includes('MN')) && (task.managerTaskId !==task.parentManagerTaskId)"
+        <button v-if="task.taskDetailResponses.length !==1 || task.parentTaskEmployeeSize !==1" class="btn-add-child" @click.self="openModal(task.taskDetailResponses.length)">➕ Công việc con</button>
+        <button v-if="task.taskDetailResponses.length !==1 || task.parentTaskEmployeeSize !==1" class="btn-add-child" @click="openEmployeeSelectionModal(task.projectId)">Thêm nhân viên</button>
+        <button class="btn-add-child" v-if="(loginAcountId === task.parentManagerTaskId || loginAcountId === task.managerTaskId || roles.includes('MN')) && (task.managerTaskId !==task.parentManagerTaskId || task.parentTaskEmployeeSize!==1)"
         @click.stop="showModalReadLogwork = true , handleGetLogWork(task.taskId)"
         >Xem Logwork</button>
         
@@ -102,6 +102,8 @@
 
   <div class="project-details" v-if="showDetails">
       <h1>Chi tiết công việc</h1>
+
+      <button @click="showModalTaskEvaluation=true">Đánh giá</button>
       <!-- Thông tin chung về dự án -->
       <div class="project-info">
         <p><strong>ID công việc:</strong> {{ task.taskId }}</p>
@@ -125,7 +127,16 @@
   
         <p><strong>Tài khoản phụ trách:</strong> {{ task.parentTaskName }}</p>
       </div>
-  
+      <div>
+        <button v-if="loginAcountId === task.managerTaskId">
+          <RouterLink
+          :to="{
+            name:'issues-request',
+            params:{taskId:task.taskId}
+          }"
+          >Phát sinh</RouterLink>
+          </button>
+      </div>
       <!-- Danh sách nhân viên tham gia dự án -->
       <div class="employee-list">
         <h2>Danh sách nhân viên tham gia</h2>
@@ -281,12 +292,35 @@
   </div>
   </div>
 </div>
+<!-- modal đánh giá công việc -->
+<div v-if="showModalTaskEvaluation" class="modal-overlay">
+      <div class="modal">
+        <h2>Đánh giá</h2>
+
+        <label for="quantity">Chất lượng:</label>
+        <select v-model="TaskEvaluationRequest.quantity" id="quantity">
+          <option value="bad">Tệ</option>
+          <option value="nomal">Bình thường</option>
+          <option value="god">Tốt</option>
+          <option value="excellent">Rất tốt</option>
+        </select>
+
+        <label for="feedback">Nhận xét:</label>
+        <textarea v-model="TaskEvaluationRequest.feedback" id="feedback" placeholder="Nhập nhận xét của bạn"></textarea>
+
+        <div class="modal-actions">
+          <button @click="openUseModal('createTE')" class="btn btn-primary">Gửi</button>
+          <button @click="showModalTaskEvaluation =false ,TaskEvaluationRequest.quantity='',TaskEvaluationRequest.feedback=''" class="btn btn-secondary">Đóng</button>
+        </div>
+      </div>
+  </div>
 
 <!-- Modal xác nhận dùng chung cho nhiều hành động-->
 <div v-if="isUseModalVisible" class="modal-overlay">
     <div class="modal">
         <h2 v-if="usesActionType === 'startTask'">Bắt đầu công việc "{{ task.taskName }}"</h2>
         <h2 v-if="usesActionType === 'taskCompleted'">Hoàn thành công việc "{{ task.taskName }}"</h2>
+        <h2 v-if="usesActionType === 'createTE'">Gửi đánh giá cho công việc: "{{ task.taskName }}"</h2>
 
         <!-- Nội dung modal thay đổi theo action -->
         <div v-if="usesActionType === 'startTask'">
@@ -294,6 +328,9 @@
         </div>
         <div v-if="usesActionType === 'taskCompleted'">
           <p style="font-weight: bold;" >bạn chắc chắn công việc đã hoàn thành?</p>
+        </div>
+        <div v-if="usesActionType === 'createTE'">
+          <p style="font-weight: bold;" >bạn chắc chắn gửi đánh giá?</p>
         </div>
         <div class="form-actions">
           <button class="btn-confirm" @click.stop="submitAction">Xác nhận</button>
@@ -324,7 +361,7 @@ const loginAcountId = Number( sessionStorage.getItem("accountId") )
 console.log( loginAcountId)
 console.log(props.task.parentManagerTaskId)
 console.log(roles)
-
+const showModalTaskEvaluation = ref(null)
 const showmodalUpdateStask = ref(null)
 const showModalCreateLogwork = ref(null)
 const showModalReadLogwork = ref(null)
@@ -359,6 +396,7 @@ const childTask = ref({
   taskName: "",
   description: "",
   status: "Pending",
+  taskCondition:'Active',
   progress: 0,
   createDate: new Date(),
   endDate: "",
@@ -389,6 +427,16 @@ const logWorkRequest = reactive({
   time:"",
   status: "Chờ duyệt"
 })
+
+const TaskEvaluationRequest = reactive({
+  quantity:"",
+  feedback:""
+})
+
+const TaskEvaluationResponse = reactive({
+
+})
+
 const accountResponse = reactive({
   data:[]
 })
@@ -428,6 +476,11 @@ const submitAction = async () => {
     console.log("call handleTaskCompleted");
     
     await handleTaskCompleted()
+  }
+  else if (usesActionType.value === "createTE") {
+    console.log("call handcreateTE");
+    
+    await handleCreateTaskEvaluation()
   }
   closeUseModal(); // Đóng modal sau khi xử lý
 };
@@ -654,6 +707,110 @@ const handleGetLogWork = async (taskId) =>{
         console.log('create logwork err', error);
   }
 }
+
+const handleCreateTaskEvaluation = async() =>{
+  try {
+    const response = await axios.post(API_ENDPOINTS.CREATE_TASKEVALUATION(loginAcountId,props.task.taskId),TaskEvaluationRequest,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("create task evaluation success")
+      
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log(' create task evaluation err', error);
+  
+  }
+}
+
+const handleUpdateTaskEvaluation = async(taskevaluationId) =>{
+  try {
+    const response = await axios.post(API_ENDPOINTS.UPDATE_TASKEVALUATION(taskevaluationId),TaskEvaluationRequest,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("update task evaluation success")
+      
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log(' update task evaluation err', error);
+  
+  }
+}
+
+const handleDeleteTaskEvaluation = async(taskevaluationId) =>{
+  try {
+    const response = await axios.post(API_ENDPOINTS.DELETE_TASKEVALUATION(taskevaluationId),{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("delete task evaluation success")
+      
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log(' delete task evaluation err', error);
+  
+  }
+}
+const handleGetTaskEvaluation = async() =>{
+  try {
+    const response = await axios.post(API_ENDPOINTS.GET_TASKEVALUATION(props.task.taskId),TaskEvaluationRequest,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("get task evaluation success")
+      TaskEvaluationResponse = response.data.result
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log(' get task evaluation err', error);
+  
+  }
+}
+
 
 const showConfirmationModal = (action, logworkId) => {
   actionType.value = action;

@@ -15,6 +15,11 @@
           name:'tools-request',
           params:{projectId : projectResponse.data.projectId}
         }">Công cụ</RouterLink></button>
+
+        <button v-if="loginAccountId === projectResponse.data.projectManagerId"><RouterLink :to="{
+          name:'issues-manager',
+          params:{projectId : projectResponse.data.projectId}
+        }">Quản lí phát sinh</RouterLink></button>
       <!-- Thông tin chung về dự án -->
       <div class="project-info">
         <p><strong>ID dự án:</strong> {{ projectResponse.data.projectId }}</p>
