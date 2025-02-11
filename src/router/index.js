@@ -9,6 +9,11 @@ const router = createRouter({
       component: () => import('../views/HomeView.vue'), // Import component cho route cha
       children: [
         {
+          path: 'dashboard', // Đường dẫn cho route con (sẽ trở thành /home/about)
+          name: 'dashboard',
+          component: () => import('../views/dashboard/BarChart.vue'), // Import component cho route con
+        },
+        {
           path: 'about', // Đường dẫn cho route con (sẽ trở thành /home/about)
           name: 'about',
           component: () => import('../views/AboutView.vue'), // Import component cho route con
@@ -144,11 +149,15 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+  const roles = sessionStorage.getItem('roles')?.split(",");
   console.log(isLoggedIn)
   // Kiểm tra nếu người dùng chưa đăng nhập và không truy cập vào trang login
   if (!isLoggedIn && to.name !== 'login') {
     next({ name: 'login' }); // Chuyển hướng đến trang đăng nhập
-  } else {
+  }else if(isLoggedIn && to.name === 'home' && roles.includes('ADMIN')){
+    next({name:'dashboard'});
+  }
+  else {
     next(); // Cho phép điều hướng đến trang đích
   }
 });

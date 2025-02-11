@@ -1,11 +1,12 @@
 <template>
     <div class="roles-add-content">
         <div class="roles-table-infor">
+            <h3>Bảng phân quyền chung</h3>
             <table>
                 <thead>
                     <tr>
                         <th v-for="role in filteredRoles" :key="role.rolesId">
-                            <RouterLink :to="{ name: 'roles-detail', params: { rolesId: role.rolesId } }">
+                            <RouterLink :to="{ name: 'roles-detail', params: { rolesId: role.rolesId }, query:{filter:'role-other'} }">
                                 {{ role.rolesName }}
                             </RouterLink>
                         </th>
@@ -43,7 +44,7 @@
                             <select v-model="rolesDetail.accountId" id="accounts">
                                 <option v-for="account in accounts.data" :key="account.accountId" :value="account.accountId">{{ account.username }}</option>
                             </select>
-                            <p>{{rolesDetail.accountId  }}</p>
+                            
                         </div>
 
                         <div class="input-roles">
@@ -51,43 +52,10 @@
                             <select v-model="rolesDetail.rolesId" id="roles">
                                 <option v-for="role in roles.data" :key="role.rolesId" :value="role.rolesId">{{ role.rolesName }}</option>
                             </select>
-                            <p>{{ rolesDetail.rolesId }}</p>
+                           
                         </div>
 
-                        <div class="input-roles-group">
-                            <label>
-                                <input type="radio" name="roles-group" @click="selectAccount('manager')" :checked="rolesDetail.manager">
-                                Quản lí
-                            </label>
-                            <label>
-                                <input type="radio" name="roles-group" @click="selectAccount('staff')" :checked="rolesDetail.staff">
-                                Nhân viên
-                            </label>
-                            <label>
-                                <input type="radio" name="roles-group" @click="selectAccount('guest')" :checked="rolesDetail.guest">
-                                Phòng khác
-                            </label>
-
-                        </div>
-
-                        <div class="input-roles-operations">
-                            <label>
-                                <input type="checkbox" v-model="rolesDetail.creater">
-                                Tạo
-                            </label>
-                            <label>
-                                <input type="checkbox" v-model="rolesDetail.reader">
-                                Xem
-                            </label>
-                            <label>
-                                <input type="checkbox" v-model="rolesDetail.writer">
-                                Sửa
-                            </label>
-                            <label>
-                                <input type="checkbox" v-model="rolesDetail.deleter">
-                                Xóa
-                            </label>
-                        </div>
+                        
                         <div class="modal-actions">
                             <button @click="handleRolesDetailAdd(rolesDetail.accountId,rolesDetail.rolesId)">Xác nhận</button>
                             <button @click="canceAddRolesDetail">Hủy</button>
@@ -177,7 +145,7 @@ const handleRolesAdd = async () =>{
         })
         if(response.status === 200){
             console.log('add roles success')
-            roles.data.push({rolesName:newRoleName.value})
+            handleRolesGet()
             showModal.value=false
 
         }
@@ -262,47 +230,86 @@ onMounted( ()=>{
 </script>
 
 <style scoped>
-.modal-overlay{
+.roles-add-content {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 800px;
+    margin: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #f4f4f4;
+    color: #333;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0 ,0,0.5);
+    background-color: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
-.modal {
-    background-color: white;
+
+.modal, .modal-author {
+    background-color: #fff;
     padding: 20px;
-    border-radius: 8px;
-    width: 300px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    text-align: center;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-.modal-author{
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 300px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    text-align: center;
-}
+
 .modal-actions {
+    display: flex;
+    justify-content: flex-end;
     margin-top: 20px;
 }
-button{
-    margin: 10px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
+
 ul {
     list-style-type: none;
     padding: 0;
-  }
+}
+
+.roles-table-infor {
+    overflow-x: auto;
+}
 </style>

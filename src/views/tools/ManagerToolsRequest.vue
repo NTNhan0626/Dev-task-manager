@@ -24,7 +24,7 @@
             <td v-if="toolProjectDetail.status ==='Pending'"> 
                 <!-- updateStatus('Approve',toolProjectDetail.toolProjectDetailId) -->
               <button  @click.stop="openUseModal('Approve') ,toolProjectDetailId = toolProjectDetail.toolProjectDetailId" >Duyệt</button>
-              <button  style="color: red;" @click.stop="openUseModal('Reject') ,toolProjectDetailId = toolProjectDetail.toolProjectDetailId">Không duyệt</button>
+              <button  style="background-color: red;" @click.stop="openUseModal('Reject') ,toolProjectDetailId = toolProjectDetail.toolProjectDetailId">Không duyệt</button>
             </td>
           </tr>
         </tbody>

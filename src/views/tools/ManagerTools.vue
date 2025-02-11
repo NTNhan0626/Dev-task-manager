@@ -27,8 +27,8 @@
             <td>{{ formatDate(tool.updatedDate) }}</td>
             <td>
               <button @click="viewTool(tool)">Xem</button>
-              <button @click="editTool(tool)">Chỉnh sửa</button>
-              <button @click="deleteTool(tool.toolId)">Xóa</button>
+              <button style="background-color: yellowgreen;" @click="editTool(tool)">Chỉnh sửa</button>
+              <!-- <button style="background-color: red;" @click="deleteTool(tool.toolId)">Xóa</button> -->
             </td>
           </tr>
         </tbody>

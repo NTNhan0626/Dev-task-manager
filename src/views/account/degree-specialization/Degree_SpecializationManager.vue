@@ -7,8 +7,8 @@
             @click="showDegreeAction === degree.degreeId?showDegreeAction=null:showDegreeAction = degree.degreeId">
                 <p>{{ degree.degreeName }} - {{ degree.major }}</p>
                 <div style="display: flex; flex-direction: row; justify-content: space-around;" v-if="showDegreeAction === degree.degreeId">
-                    <button @click.stop="showDropdownDegree = true,handleGetDegreeDetailByDegreeId(degree.degreeId)">Chi tiết</button>
-                    <button style="background-color: red; color: azure; border: 0cap;" @click="handleDeleteDegree(degree.degreeId)"> Xóa </button>
+                    <button class="approve-button" @click.stop="showDropdownDegree = true,handleGetDegreeDetailByDegreeId(degree.degreeId)">Chi tiết</button>
+                    <button class="reject-button"> Xóa </button>
                 </div>
             </div>
             <div class="degree-object" @click.self="showInputDegree=true" style="max-height: 134.4px;">
@@ -37,8 +37,8 @@
             @click="showSpecializationAction === specialization.specializationId?showSpecializationAction=null:showSpecializationAction = specialization.specializationId">
                 <p>{{ specialization.specializationName }}</p>
                 <div style="display: flex; flex-direction: row; justify-content: space-around;" v-if="showSpecializationAction === specialization.specializationId">
-                    <button @click.stop="showDropdownSpecialization = true ,handleGetSpecializationBySpecializationId(specialization.specializationId)">Chi tiết</button>
-                    <button style="background-color: red; color: azure; border: 0cap;"> Xóa </button>
+                    <button class="approve-button" @click.stop="showDropdownSpecialization = true ,handleGetSpecializationBySpecializationId(specialization.specializationId)">Chi tiết</button>
+                    <button class="reject-button"> Xóa </button>
                 </div>
             </div>
 
@@ -58,8 +58,9 @@
             </div>
         </div>
 
-        <div class="dropdown-degree" v-if="showDropdownDegree">
-            <table>
+         <!-- Degree Detail Dropdown -->
+         <div class="dropdown-degree" v-if="showDropdownDegree">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Tên bằng</th>
@@ -86,18 +87,18 @@
                         <td>{{ degreeDetail.duration }}</td>
                         <td>{{ degreeDetail.status }}</td>
                         <td>
-                            <button @click="handleApproveOrRejectDegree('Đã duyệt',degreeDetail.id,degreeDetail.degreeId)">Duyệt</button>
-                            <button @click="handleApproveOrRejectDegree('Không duyệt',degreeDetail.id,degreeDetail.degreeId)">Không duyệt</button>
-                            <button @click="handleApproveOrRejectDegree('Cần chỉnh sửa',degreeDetail.id,degreeDetail.degreeId)">Yêu cầu chỉnh sửa</button>
+                            <button @click="handleApproveOrRejectDegree('Đã duyệt', degreeDetail.id, degreeDetail.degreeId)" class="approve-button">Duyệt</button>
+                            <button @click="handleApproveOrRejectDegree('Không duyệt', degreeDetail.id, degreeDetail.degreeId)" class="reject-button">Không duyệt</button>
+                            
                         </td>
                     </tr>
-                    
                 </tbody>
             </table>
         </div>
 
+        <!-- Specialization Detail Dropdown -->
         <div class="dropdown-specialization" v-if="showDropdownSpecialization">
-            <table>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Tên chuyên môn</th>
@@ -118,12 +119,10 @@
                         <td>{{ specalizationDetail.description }}</td>
                         <td>{{ specalizationDetail.status }}</td>
                         <td>
-                            <button @click="handleApproveOrRejectSpecialization('Đã duyệt',specalizationDetail.specializationDetailId,specalizationDetail.specializationId)">Duyệt</button>
-                            <button @click="handleApproveOrRejectSpecialization('Không duyệt',specalizationDetail.specializationDetailId,specalizationDetail.specializationId)">Không duyệt</button>
-                            <button @click="handleApproveOrRejectSpecialization('Cần chỉnh sửa',specalizationDetail.specializationDetailId,specalizationDetail.specializationId)">Yêu cầu chỉnh sửa</button>
+                            <button @click="handleApproveOrRejectSpecialization('Đã duyệt', specalizationDetail.specializationDetailId, specalizationDetail.specializationId)" class="approve-button">Duyệt</button>
+                            <button @click="handleApproveOrRejectSpecialization('Không duyệt', specalizationDetail.specializationDetailId, specalizationDetail.specializationId)" class="reject-button">Không duyệt</button>
                         </td>
                     </tr>
-                    
                 </tbody>
             </table>
         </div>
@@ -402,68 +401,135 @@ onMounted (()=>{
     text-align: center;
     cursor: pointer;
 }
+.action-button, .delete-button, .confirm-button, .cancel-button, .approve-button, .reject-button, .edit-button {
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+.action-button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+    }
 
-.input-degree {
-    display: block; /* Đảm bảo các phần tử nằm theo chiều dọc */
-    margin-bottom: 15px; /* Khoảng cách giữa các dòng */
-    padding: 0 20px; /* Thêm khoảng cách cho cả hai bên */
-}
+    .action-button:hover {
+        background-color: #2980b9;
+    }
 
-.input-degree label {
-    display: block; /* Đảm bảo label và input nằm trên cùng một dòng */
-    margin-bottom: 10px; /* Khoảng cách giữa các label và input */
-    text-align: left; /* Canh lề trái cho nhãn */
-}
+    .delete-button {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+    }
 
-.input-degree input {
-    width: 100%; /* Đảm bảo ô nhập liệu chiếm hết chiều rộng */
-    padding: 8px; /* Thêm padding để ô nhập liệu rộng hơn */
-    box-sizing: border-box; /* Đảm bảo input không bị tràn ra ngoài */
-}
-.degree-action{
-    display: flex;
-    justify-content: space-between;
-    flex-direction: row;
-}
+    .delete-button:hover {
+        background-color: #c0392b;
+    }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 16px;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
+    .confirm-button {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+    }
 
-thead tr {
-    background-color: #4CAF50;
-    color: white;
-    text-align: left;
-}
+    .confirm-button:hover {
+        background-color: #27ae60;
+    }
 
-th, td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #ddd;
-}
+    .cancel-button {
+        background-color: #95a5a6;
+        color: white;
+        border: none;
+    }
 
-tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
+    .cancel-button:hover {
+        background-color: #7f8c8d;
+    }
 
-tbody tr:hover {
-    background-color: #f1f1f1;
-}
+    .approve-button {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+    }
 
-th {
-    font-weight: bold;
-}
+    .approve-button:hover {
+        background-color: #27ae60;
+    }
 
-td {
-    color: #333;
-}
+    .reject-button {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+    }
 
-tbody tr:last-child td {
-    border-bottom: none;
-}
+    .reject-button:hover {
+        background-color: #c0392b;
+    }
 
+    .edit-button {
+        background-color: #f39c12;
+        color: white;
+        border: none;
+    }
+
+    .edit-button:hover {
+        background-color: #e67e22;
+    }
+
+    .input-degree {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background-color: #ecf0f1;
+        padding: 15px;
+        border-radius: 8px;
+        width: 300px;
+    }
+
+    .input-label {
+        font-size: 16px;
+        color: #34495e;
+    }
+
+    .input-field {
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+    }
+
+    .add-text {
+        font-size: 32px;
+        color: #3498db;
+        font-weight: bold;
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .dropdown-degree, .dropdown-specialization {
+        margin-top: 20px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .table th, .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .table th {
+        background-color: #3498db;
+        color: white;
+    }
 </style>

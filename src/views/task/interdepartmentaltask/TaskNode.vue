@@ -5,7 +5,7 @@
         class="task-title"
         @click="showTaskAction === task.taskId ? (showTaskAction = null) : (showTaskAction = task.taskId) , showDetails = false"
       >
-        {{ task.taskName }} + {{ task.taskId }}
+        {{ task.taskName }} <span style="color: orangered;">Tiến độ: {{ task.progress }}%</span>
       </span>
       <div class="task-actions" v-if="showTaskAction === task.taskId && ((roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) || loginAcountId === task.managerTaskId || loginAcountId === task.parentManagerTaskId || loginAcountId === task.projectManagerId) && task.taskCondition==='Active'">
         <button class="btn-details" @click.stop="toggleDetails">🔍 Xem chi tiết</button>
@@ -270,9 +270,15 @@
         <td class="description" :title="logwork.description">{{ new Date(logwork.createDate).toLocaleDateString() }}</td>
         <td>{{ logwork.time }}</td>
         <td>{{ logwork.status }}</td>
-        <td v-if="((roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) && logwork.status ==='Chờ duyệt') || (loginAcountId === task.parentManagerTaskId && logwork.status ==='Chờ duyệt') || (loginAcountId === task.projectManagerId && logwork.status ==='Chờ duyệt')">
-          <button @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Duyệt</button>
-          <button @click.stop="showConfirmationModal('Không duyệt', logwork.logworkId)">Không duyệt</button>
+        
+        <td >
+          <button
+          v-if="((roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) && logwork.status ===null) || (loginAcountId === task.parentManagerTaskId && logwork.status ===null)"
+          style="background-color: #007bff;color: white;" @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Nhận xét</button>
+          <button 
+          v-if="((roles.includes('leadmanager') && loginAcountId===task.projectCreaterId) && logwork.status !== null) || (loginAcountId === task.parentManagerTaskId && logwork.status !==null)"
+          style="background-color: #007bff;color: white;" @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Chỉnh sửa</button>
+
         </td>
       </tr>
     </tbody>
@@ -282,8 +288,10 @@
   <!-- Modal Xác Nhận Logwork -->
   <div v-if="showModal" class="modal-overlay">
     <div class="modal">
-      <h3>Xác nhận {{ actionType }} logwork</h3>
-      <p>Bạn có chắc chắn muốn {{ actionType }} logwork này?</p>
+      <h3>Nhận xét logwork</h3>
+      <label for="description">Nhận xét:</label>
+                <textarea v-model="logworkStatus" id="description" required></textarea>
+      
       <button @click="confirmAction">Xác nhận</button>
       <button @click="cancelAction">Hủy</button>
     </div>
@@ -317,6 +325,8 @@
 import API_ENDPOINTS from "@/api/api";
 import axios from "axios";
 import { computed, reactive, ref } from "vue";
+import { RouterLink } from "vue-router";
+
 const props = defineProps({
   task: {
     type: Object,
@@ -397,7 +407,7 @@ const logWorkRequest = reactive({
   description: "",
   createDate: new Date(),
   time:"",
-  status: "Chờ duyệt"
+  status: null
 })
 const accountResponse = reactive({
   data:[]
@@ -674,10 +684,10 @@ const showConfirmationModal = (action, logworkId) => {
 
 // Xác nhận hành động và cập nhật trạng thái logwork
 const confirmAction = async () => {
-  const status = actionType.value === 'Duyệt' ? 'Đã duyệt' : 'Không duyệt';
-  await handleUpdateLogworkStastus(selectedLogworkId.value, status);
+  await handleUpdateLogworkStastus(selectedLogworkId.value, logworkStatus.value);
   showModal.value = false; // Đóng modal
 };
+
 
 // Hủy hành động và đóng modal
 const cancelAction = () => {

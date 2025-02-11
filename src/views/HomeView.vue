@@ -5,6 +5,7 @@ import IconAler from '@/components/icons/IconAler.vue';
 import Footer from '@/components/Footer.vue';
 import DepartmentDetail from './department/DepartmentDetail.vue';
 import Header from '@/components/Header.vue';
+
 </script>
 
 <template>
@@ -13,8 +14,8 @@ import Header from '@/components/Header.vue';
   </header>
   <main>
     <Footer></Footer>
-    <div class="main-content">
-     
+        <div class="main-content">
+          
       <RouterView/>
       
     </div>

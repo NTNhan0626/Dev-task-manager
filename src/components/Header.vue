@@ -1,12 +1,12 @@
 <template>
     <div class="header-items-left">
-      <h1 style="font-size: 25px;">Devstank Manager</h1>
-      <RouterLink  to="/home/about" >Công việc</RouterLink>
-      <RouterLink to="/home/project">Dự án</RouterLink>
+      <h1 style="font-size: 25px;">Devstask Manager</h1>
+      <span style="margin-left: 20px;"><RouterLink to="/home/project">Dự án</RouterLink></span>
+      
     </div>
     <div class="header-items-right">
-      <IconAler ></IconAler>
-      <p> Xin chào:{{ userName }}</p>
+      <IconAler style="padding: 0 20px;" ></IconAler>
+      <p style="padding: 0 20px 0 0;"> Xin chào: {{ userName }}</p>
       <img src="#" alt="avatar" class="avatar" @click="toggleDropdown">
     </div>
 

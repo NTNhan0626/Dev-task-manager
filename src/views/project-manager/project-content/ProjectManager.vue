@@ -108,7 +108,7 @@
 
                 <div class="modal-buttons">
                     <button type="submit">Lưu</button>
-                    <button type="button" @click="showmodalCreateDepartmentProject = false">Hủy</button>
+                    <button type="button" @click.stop="showmodalCreateDepartmentProject = false">Hủy</button>
                 </div>
             </form>
         </div>
@@ -144,7 +144,7 @@
           </table>
 
           <div class="modal-buttons">
-            <button type="button" @click="addEmployeesToProject">Thêm nhân viên</button>
+            <button style="background-color: blue;" type="button" @click="addEmployeesToProject">Thêm nhân viên</button>
             <button type="button" @click="showEmployeeSelectionModal = false">Hủy</button>
           </div>
         </div>
@@ -184,7 +184,7 @@
         </div>
       </div>
       <!-- modal dùng chung cắt ra từ modal để xử lí các thao tasc của project như hoàn thành ...-->
-      <div v-if="isUseModalVisible" class="modal-overlay">
+      <div v-if="isUseModalVisible === true" class="modal-overlay">
             <div class="modal">
                 
                 <h2 v-if="usesActionType === 'approveAccounts'">Xác nhận duyệt nhân viên</h2>
@@ -253,7 +253,8 @@
         createdDate:new Date(),
         startDate: '',
         endDate: '',
-        status: 'Chuẩn bị',
+        status: 'Pending',
+        projectCondition: 'Active',
         progress: 0,
         projectManagerId: accountId
     });
@@ -293,6 +294,8 @@ const handleCreateDepartmentProject = async () =>{
         })
         if(response.status === 200){
             console.log("create department project success")
+            showmodalCreateDepartmentProject.value=false
+            handlegetAllByDepartmentIdIdAndProjectType()
         }
     } catch (error) {
         if (error.response) {
@@ -478,6 +481,7 @@ const handleProjectCancelled = async(projectId) =>{
     })
     if(response.status === 200){
       console.log("cancelled project success")
+      handleDeletedTaskInProjectIsCanceled(response.data.result.taskParentId)
      
     }
   } catch (error) {
@@ -493,6 +497,33 @@ const handleProjectCancelled = async(projectId) =>{
         console.log('cancelled project  err', error);
   }
 }
+
+const handleDeletedTaskInProjectIsCanceled = async (taskParentId) =>{
+    try {
+        const respone = await axios.delete(API_ENDPOINTS.DELETE_TASK(Number(taskParentId)),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        if(respone.status === 200){
+            console.log('deleted task success')
+           
+            
+        }
+    } catch (error) {
+        if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('deleted task err', error);
+    }
+}
+
 const handleProjectContinued = async(projectId) =>{
   try {
     const response = await axios.put(API_ENDPOINTS.UPDATE_PROJECT(projectId),projectUpdateContinuedProject,{

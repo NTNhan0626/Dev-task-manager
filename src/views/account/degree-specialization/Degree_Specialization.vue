@@ -16,7 +16,7 @@
                 </tr>
             </thead>
             <tbody>
-                <template v-for="(degreedetail, index) in degreedetailresponse.data" :key="degreedetail.degreedetailId">
+                <template v-for="(degreedetail, index) in degreedetailresponse.data" :key="degreedetail.id">
                     <tr @click="toggleRow(index)">
                         <td>{{ degreedetail.degreeName }}</td>
                         <td>{{ degreedetail.major }}</td>
@@ -28,10 +28,10 @@
                         <td>{{ degreedetail.status }}</td>
                     </tr>
                     <!-- Hiển thị nút chỉ khi dòng được chọn -->
-                    <tr v-if="selectedRow === index && (degreedetail.status ==='Không duyệt' || degreedetail.status ==='Đã duyệt')" class="action-row">
+                    <tr v-if="selectedRow === index" class="action-row">
                         <td colspan="8" style="text-align: center;">
-                            <button @click="updateDegree(degreedetail)">Cập nhật</button>
-                            <button @click="deleteDegree(degreedetail)">Xóa</button>
+                           
+                            <button style="background-color: red;" @click="openConfirmModal('dgDetail',degreedetail.id)">Xóa</button>
                         </td>
                     </tr>
                 </template>
@@ -44,11 +44,11 @@
         
     </div>
     <div class="information-card">
-        <h2 class="card-title">Chứng chỉ</h2>
+        <h2 class="card-title">Chuyên môn</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Tên chứng chỉ</th>
+                    <th>Tên chuyên môn</th>
                     <th>Cấp độ chuyên môn</th>
                     <th>Ngày cấp</th>
                     <th>Mô tả</th>
@@ -56,18 +56,40 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="specializationdetail in specializationdetailresponse.data" :key="specializationdetail.specializationdetailId">
-                    <td>{{ specializationdetail.specializationName }}</td>
-                    <td>{{ specializationdetail.level }}</td>
-                    <td>{{ specializationdetail.startDate }}</td>
-                    <td>{{ specializationdetail.description }}</td>
-                    <td>{{ specializationdetail.status }}</td>
-                </tr>
+                <template v-for="(specializationdetail, index) in specializationdetailresponse.data" :key="specializationdetail.specializationdetailId">
+                    <tr @click="toggleRow2(index)">
+                        <td>{{ specializationdetail.specializationName }}</td>
+                        <td>{{ specializationdetail.level }}</td>
+                        <td>{{ specializationdetail.startDate }}</td>
+                        <td>{{ specializationdetail.description }}</td>
+                        <td>{{ specializationdetail.status }}</td>
+                        <!-- Hiển thị nút chỉ khi dòng được chọn -->
+                    
+                    </tr>
+                    <tr v-if="selectedRow2 === index" class="action-row">
+                        <td colspan="8" style="text-align: center;">
+                            <button style="background-color: red;" @click="openConfirmModal('spDetail',specializationdetail.specializationDetailId)">Xóa</button>
+                        </td>
+                    </tr>
+                </template>
+                
             </tbody>
         </table>
         <div class="degree-action">
             <button @click="showSpecializationForm = true">Thêm chuyên môn</button>
         </div>
+    </div>
+
+    <!-- Modal xác nhận xóa -->
+    <div v-if="showConfirmModal" class="modal-overlay">
+      <div class="modal-content">
+        <p v-if="types === 'dgDetail'">Bạn có chắc chắn muốn xóa bằng cấp này không?</p>
+        <p v-if="types === 'spDetail'">Bạn có chắc chắn muốn xóa chuyên môn này không?</p>
+        <div class="modal-actions">
+          <button @click="confirmDelete">Xác nhận</button>
+          <button style="background-color: red;" @click="closeConfirmModal">Hủy</button>
+        </div>
+      </div>
     </div>
 
     <div v-if="showDegreeForm" class="modal-overlay">
@@ -101,7 +123,7 @@
                 <input id="duration" v-model="degreeDetailRequest.duration" type="text" required />
             </div>
             <div class="modal-actions">
-                <button type="button" @click="showDegreeForm = false">Hủy</button>
+                <button style="background-color: red;" type="button" @click.stop="showDegreeForm = false">Hủy</button>
                 <button type="submit">Lưu</button>
             </div>
         </form>
@@ -133,7 +155,7 @@
             </div>
             
             <div class="modal-actions">
-                <button type="button" @click="showSpecializationForm = false">Hủy</button>
+                <button  style="background-color: red;" type="button" @click.stop="showSpecializationForm = false">Hủy</button>
                 <button type="submit">Lưu</button>
             </div>
         </form>
@@ -145,10 +167,11 @@
 import API_ENDPOINTS from '@/api/api';
 import axios from 'axios';
 import { onMounted, reactive, ref } from 'vue';
-
+const loginAccountId = Number(sessionStorage.getItem("accountId"))
+const token = sessionStorage.getItem("token")
 const showSpecializationForm = ref(false)
 const specializationDetailRequest = reactive({
-    accountId: 2,
+    accountId: loginAccountId,
     specializationId: null,
     startDate: '',
     description: '',
@@ -157,6 +180,37 @@ const specializationDetailRequest = reactive({
    
 });
 
+
+// Trạng thái modal và ID được chọn
+const showConfirmModal = ref(false);
+const selectedId = ref(null);
+const types = ref('')
+// Mở modal xác nhận
+const openConfirmModal = (type,id) => {
+    types.value = type
+    selectedId.value = id;
+    showConfirmModal.value = true;
+};
+
+// Đóng modal xác nhận
+const closeConfirmModal = () => {
+  showConfirmModal.value = false;
+  selectedId.value = null;
+  types.value = null
+};
+
+// Xác nhận xóa
+const confirmDelete = async () => {
+  if (selectedId.value !== null && types.value === 'dgDetail') {
+    console.log(selectedId.value)
+    await deleteDegreeDetail(selectedId.value)
+  }
+  else if(selectedId.value !== null && types.value === 'spDetail'){
+    console.log(selectedId.value)
+    await deleteSpecializationDetail(selectedId.value)
+  }
+  closeConfirmModal();
+};
 
 
 const degreedetailresponse = reactive({
@@ -174,9 +228,19 @@ const toggleRow = (index) =>{
     selectedRow.value === index? selectedRow.value=null:selectedRow.value = index
 }
 
+const selectedRow2 = ref(null)
+
+const toggleRow2 = (index) =>{
+    selectedRow2.value === index? selectedRow2.value=null:selectedRow2.value = index
+}
+
 const handleGetDegree = async () =>{
     try {
-        const response = await axios.get(API_ENDPOINTS.GET_DEGREE)
+        const response = await axios.get(API_ENDPOINTS.GET_DEGREE,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if (response.status === 200){
             console.log("get degree success")
             degreeResponse.data = response.data.result
@@ -199,7 +263,11 @@ const handleGetDegree = async () =>{
 
 const handleDegreeDetailGet = async() =>{
     try {
-        const response = await axios.get(API_ENDPOINTS.GET_DEGREEDETAIL(2))
+        const response = await axios.get(API_ENDPOINTS.GET_DEGREEDETAIL(loginAccountId),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if(response.status === 200){
             degreedetailresponse.data = response.data.result
             console.log(degreedetailresponse.data)
@@ -218,9 +286,66 @@ const handleDegreeDetailGet = async() =>{
     }
 }
 
+const deleteDegreeDetail = async(degreedetailId) =>{
+    try {
+        const response = await axios.delete(API_ENDPOINTS.DELETE_DEGREEDETAIL(degreedetailId),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        if(response.status === 200){
+           
+            console.log('delete degree detail success')
+            handleDegreeDetailGet()
+        }
+    } catch (error) {
+        if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('delete degree detail err', error);
+    }
+}
+
+const deleteSpecializationDetail = async(specializationDetailId) =>{
+    try {
+        const response = await axios.delete(API_ENDPOINTS.DELETE_SPECIALIZATIONDETAIL(specializationDetailId),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        if(response.status === 200){
+           
+            console.log('delete specialization detail success')
+            handleSpecializationDetailGet()
+        }
+    } catch (error) {
+        if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('delete specialization detail err', error);
+    }
+}
+
+
 const handleSpecializationDetailGet = async() =>{
     try {
-        const response = await axios.get(API_ENDPOINTS.GET_SPECIALIZATIONDETAIL(2))
+        const response = await axios.get(API_ENDPOINTS.GET_SPECIALIZATIONDETAIL(loginAccountId),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if(response.status === 200){
             specializationdetailresponse.data = response.data.result
             console.log(specializationdetailresponse.data)
@@ -242,7 +367,7 @@ const handleSpecializationDetailGet = async() =>{
 const showDegreeForm = ref(false);
 
 const degreeDetailRequest = reactive({
-    accountId: 2,
+    accountId: loginAccountId,
     degreeId: null,
     issueDate: '',
     institution: '',
@@ -253,10 +378,15 @@ const degreeDetailRequest = reactive({
 
 const handleCreateDegreeDetail = async () => {
     try {
-        const response = await axios.post(API_ENDPOINTS.ADD_DEGREEDETAIL,degreeDetailRequest)
+        const response = await axios.post(API_ENDPOINTS.ADD_DEGREEDETAIL,degreeDetailRequest,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if(response.status === 200){
             console.log("create degreedetail success")
             handleDegreeDetailGet()
+            showDegreeForm.value = false
         }
     } catch (error) {
         if (error.response) {
@@ -274,10 +404,15 @@ const handleCreateDegreeDetail = async () => {
 
 const handleCreateSpecializationDetail = async () => {
     try {
-        const response = await axios.post(API_ENDPOINTS.ADD_SPECIALIZATIONDETAIL,specializationDetailRequest)
+        const response = await axios.post(API_ENDPOINTS.ADD_SPECIALIZATIONDETAIL,specializationDetailRequest,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if(response.status === 200){
             console.log("create Specialization detail success")
             handleSpecializationDetailGet()
+            showSpecializationForm.value = false
         }
     } catch (error) {
         if (error.response) {
@@ -297,7 +432,11 @@ const specializationResponse = reactive({
 })
 const handleGetSpecialization = async () =>{
     try {
-        const response = await axios.get(API_ENDPOINTS.GET_SPECIALIZATION)
+        const response = await axios.get(API_ENDPOINTS.GET_SPECIALIZATION,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
         if (response.status === 200){
             console.log("get specialization success")
             specializationResponse.data = response.data.result
@@ -325,104 +464,137 @@ onMounted(()=>{
 })
 </script>
 <style scoped>
-.information-dg_sp{
-    display: inline-flex;
-    border: 2px solid blue;
+.information-dg_sp {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
 }
-table{
-    border: 2px solid red;
+
+.information-card {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-/* Nền mờ */
+
+.card-title {
+    font-size: 1.5em;
+    color: #333333;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table th, table td {
+    text-align: center;
+    padding: 12px 8px;
+    border: 1px solid #ddd;
+}
+
+table th {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.action-row {
+    background-color: #ffefe0;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.degree-action {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.degree-action button {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.degree-action button:hover {
+    background-color: #0056b3;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 999;
 }
 
-/* Cửa sổ */
 .modal-content {
-    background: white;
-    padding: 25px 30px;
+    background-color: #ffffff;
+    padding: 20px;
     border-radius: 8px;
-    width: 420px;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .modal-content h3 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-align: center;
-    color: #333;
-}
-
-.form-group {
+    font-size: 1.5em;
     margin-bottom: 20px;
 }
 
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #555;
+.form-group {
+    margin-bottom: 15px;
 }
 
-.form-group input {
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input, select {
     width: 100%;
-    padding: 8px 10px;
-    font-size: 14px;
+    padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box;
-    outline: none;
-    transition: border-color 0.3s;
 }
 
-.form-group input:focus {
-    border-color: #66afe9;
-    box-shadow: 0 0 5px rgba(102, 175, 233, 0.5);
-}
-
-/* Nút hành động */
 .modal-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    justify-content: space-between;
     margin-top: 20px;
 }
 
 .modal-actions button {
-    padding: 10px 18px;
-    font-size: 14px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    outline: none;
+    background-color: #007bff;
+    color: #fff;
 }
 
 .modal-actions button:hover {
-    opacity: 0.9;
-}
-
-.modal-actions button:first-child {
-    background-color: #f0f0f0;
-    color: #333;
-}
-
-.modal-actions button:last-child {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.modal-actions button:last-child:hover {
-    background-color: #45a049;
+    background-color: #0056b3;
 }
 
 

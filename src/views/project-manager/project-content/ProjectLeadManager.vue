@@ -3,7 +3,8 @@
       <h3><span> Dự án liên phòng ban </span></h3> 
       <button class="create-project-button" @click.self="showmodalCreateInterDepartmentalProject = true" >Tạo dự án liên phòng ban</button>
       <p class="projects-title">Các dự án hiện tại:</p>
-      <div class="projects" v-for="(project,index) in interDepartmentalProjectResponse.data" :key="project.projectId"  >
+      <div class="projects">
+      <div  v-for="(project,index) in interDepartmentalProjectResponse.data" :key="project.projectId"  >
         <div class="project"
         @click.self="showProjectAction === project.projectId? showProjectAction=null:showProjectAction=project.projectId"
         v-if="accountId === project.createrId ">
@@ -52,6 +53,7 @@
 
         </div>
       </div>
+    </div>
 
       <div v-if="showmodalCreateInterDepartmentalProject" class="modal-overlay">
         <div class="modal-content">
@@ -461,7 +463,7 @@ const handleProjectCancelled = async(projectId) =>{
     })
     if(response.status === 200){
       console.log("cancelled project success")
-     
+      handleDeletedTaskInProjectIsCanceled(response.data.result.taskParentId)
     }
   } catch (error) {
     if (error.response) {
@@ -475,6 +477,32 @@ const handleProjectCancelled = async(projectId) =>{
         }
         console.log('cancelled project  err', error);
   }
+}
+
+const handleDeletedTaskInProjectIsCanceled = async (taskParentId) =>{
+    try {
+        const respone = await axios.delete(API_ENDPOINTS.DELETE_TASK(Number(taskParentId)),{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        if(respone.status === 200){
+            console.log('deleted task success')
+           
+            
+        }
+    } catch (error) {
+        if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('deleted task err', error);
+    }
 }
 const handleProjectContinued = async(projectId) =>{
   try {
@@ -726,9 +754,11 @@ th, td {
   padding: 12px;
   text-align: left;
   border-bottom: 1px solid #ddd;
+  
 }
 
 th {
+  text-align: center;
   background-color: #f4f4f9;
 }
 
@@ -810,6 +840,16 @@ th {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+}
+td {
+  text-align: center; /* Căn giữa nội dung trong ô */
+  vertical-align: middle; /* Đảm bảo nội dung căn giữa theo chiều dọc */
+}
+
+input[type="radio"] {
+  display: inline-block;
+  vertical-align: middle; /* Căn giữa so với dòng chữ */
+  margin: 0; /* Loại bỏ khoảng cách thừa */
 }
 
 </style>

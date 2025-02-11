@@ -44,9 +44,24 @@ const handleLogin = async() => {
             router.push('/home')
         }
     } catch (error) {
+      if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('Login failed err', error);
+        if(error.response.data.code==='1014'){
+          alert('Login failed. your account has been blocked')
+        }
+        else{
+          alert('Login failed. Please check your username and password')
+        }
+       
         
-        localStorage.setItem('isLoggedIn',true)
-        alert('Login failed. Please check your username and password')
     }
 }
 
@@ -81,7 +96,7 @@ const handleLogin = async() => {
                 <button type="submit" class="login-btn" :disabled="isLoading">
                 {{ isLoading ? 'Logging in...' : 'Login' }}
                 </button>
-                <button @click="onRegister" type="button" class="register-btn">Register</button>
+               
                 <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
             </form>
         </div>
@@ -94,7 +109,7 @@ const handleLogin = async() => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(145deg, #8300ff, #510087);
+  background: linear-gradient(145deg, #944428, #510087);
 }
 
 .login-box {
@@ -133,7 +148,7 @@ const handleLogin = async() => {
 }
 
 input {
-  width: 100%;
+  width: 80%;
   padding: 0.75rem 2.5rem;
   border: none;
   border-radius: 30px;

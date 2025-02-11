@@ -1,37 +1,41 @@
 <template>
     <div class="roles-add-content">
-        <div class="roles-table-infor">
-            <table>
-                <thead>
-                    <tr>
-                        <th v-for="role in filteredRoles" :key="role.rolesId">
-                            <RouterLink :to="{ name: 'roles-detail', params: { rolesId: role.rolesId } }">
-                                {{ role.rolesName }}
-                            </RouterLink>
-                        </th>
-                        
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td v-for="role in filteredRoles" :key="role.rolesId">
-                            <ul>
-                                <li v-for="account in role.accountResponseList" :key="account.username"> {{ account.username }}</li>
-                                
-                            </ul>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+      <div class="roles-table-infor">
+        <h3>Bảng phân quyền theo phòng ban</h3>
+        <table>
+          <thead>
+            <tr>
+              <th v-for="role in filteredRoles" :key="role.rolesId">
+                <RouterLink :to="{ name: 'roles-detail', params: { rolesId: role.rolesId },query:{filter:'role-department'} }">
+                  {{ role.rolesName }}
+                </RouterLink>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td v-for="role in filteredRoles" :key="role.rolesId">
+                <ul>
+                  <li v-for="account in role.accountResponseList" :key="account.username">
+                    {{ account.username }}
+                  </li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-</template>
+  </template>
+  
+  
 <script setup>
 import API_ENDPOINTS from '@/api/api';
 import axios from 'axios';
 import { computed, reactive ,ref} from 'vue';
 import { onMounted } from 'vue';
-
+const token = sessionStorage.getItem("token")
+const typeRoles = "rolesDepartment"
 const roles = reactive({
     data:[]
 })
@@ -100,7 +104,11 @@ const filteredRoles = computed(() => {
 
 const handleGetDepartment = async() =>{
     try {
-        const response = await axios.get(API_ENDPOINTS.GET_DEPARTMENT)
+        const response = await axios.get(API_ENDPOINTS.GET_DEPARTMENT,{
+          headers:{
+          'Authorization': `Bearer ${token}`
+        }
+        })
         if(response.status === 200){
             console.log('get depaerment success form rolesdepartment')
             departments.data = response.data.result
@@ -132,9 +140,34 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.roles-add-content {
+  margin: 20px;
+}
 
-ul {
-    list-style-type: none;
-    padding: 0;
-  }
+.roles-table-infor table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.roles-table-infor th,
+.roles-table-infor td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.roles-table-infor th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.roles-table-infor ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.roles-table-infor li {
+  margin: 4px 0;
+}
 </style>

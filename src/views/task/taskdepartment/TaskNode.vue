@@ -3,9 +3,9 @@
     <div class="task">
       <span
         class="task-title"
-        @click="showTaskAction === task.taskId ? (showTaskAction = null) : (showTaskAction = task.taskId)"
+        @click="showTaskAction === task.taskId ? (showTaskAction = null) : (showTaskAction = task.taskId), showDetails = false"
       >
-        {{ task.taskName }} + {{ task.taskId }}
+        {{ task.taskName }} <span style="color: orangered;">Tiến độ: {{ task.progress }}%</span>
       </span>
       <div class="task-actions" v-if="showTaskAction === task.taskId && (roles.includes('MN') || loginAcountId === task.managerTaskId || loginAcountId === task.parentManagerTaskId) && task.taskCondition==='Active'">
         <button class="btn-details" @click.stop="toggleDetails">🔍 Xem chi tiết</button>
@@ -18,6 +18,12 @@
         <button class="btn-add-child" v-if="(loginAcountId === task.managerTaskId) && (task.managerTaskId !==task.parentManagerTaskId)"
         @click.stop="showModalCreateLogwork = true"
         >Thêm Logwork</button>
+        <button v-if="roles.includes('MN')||loginAcountId===task.parentManagerTaskId" class="btn-add-child" @click.stop="openUseModal('pausedTask')" style="background-color: yellowgreen;">Tạm dừng</button>
+        <button v-if="task.parentTaskId !== null && (roles.includes('MN')||loginAcountId===task.parentManagerTaskId)" class="btn-add-child"@click.stop="openUseModal('deleteTask')" style="background-color: red;">Xóa</button>
+      </div>
+      <div class="task-actions" v-if="showTaskAction === task.taskId && (roles.includes('MN')||loginAcountId===task.parentManagerTaskId) && task.taskCondition==='Paused'">
+        <button class="btn-add-child" @click.stop="openUseModal('continueTask')" style="background-color: yellowgreen;">Tiếp tục</button>
+        <button v-if="task.parentTaskId !==null" class="btn-add-child"@click.stop="openUseModal('deleteTask')"style="background-color: red;">Xóa</button>
       </div>
       
     </div>
@@ -38,8 +44,7 @@
             Trạng thái:
             <select v-model="childTask.status">
               <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
+             
             </select>
           </label>
           <label>
@@ -103,13 +108,13 @@
   <div class="project-details" v-if="showDetails">
       <h1>Chi tiết công việc</h1>
 
-      <button @click="showModalTaskEvaluation=true">Đánh giá</button>
+      <button v-if="roles.includes('MN') && task.status==='Completed'" @click="showModalTaskEvaluation=true">Đánh giá</button>
       <!-- Thông tin chung về dự án -->
       <div class="project-info">
         <p><strong>ID công việc:</strong> {{ task.taskId }}</p>
         <p><strong>Tên công việc:</strong> {{ task.taskName }}</p>
         <p><strong>Mô tả:</strong> {{ task.description }}</p>
-        <p><strong>Loại công việc:</strong> {{ task.projectType ? 'Nội bộ' : 'Liên phòng ban' }}</p>
+        
         <p><strong>Ngày tạo:</strong> {{ formatDate(task.createDate) }}</p>
         <p><strong>Ngày bắt đầu:</strong> {{ formatDate(task.startDate) }}</p>
         <p><strong>Ngày kết thúc dự kiến:</strong> {{ formatDate(task.endDate) }}</p>
@@ -145,10 +150,8 @@
             <tr>
               <th>#</th>
               <th>Tài khoản</th>
-              <th>Vai trò</th>
-              <th>Ngày tham gia</th>
-              <th>Công việc</th>
               <th>Trạng thái</th>
+              <th>Ngày tham gia</th>
             </tr>
           </thead>
           <tbody>
@@ -167,7 +170,7 @@
         @click.stop="openUseModal('startTask')"
         >Bắt đầu</button>
       </div>
-      <div class="taskdetail-actions" v-if="task.status === 'In Progress' && loginAcountId === task.managerTaskId">
+      <div class="taskdetail-actions" v-if="['In Progress','Pending'].includes(task.status) && (loginAcountId === task.managerTaskId || roles.includes('MN'))">
         <button :disabled="!(roles.includes('MN') || loginAcountId===task.parentManagerTaskId)" @click.stop="showmodalUpdateStask = true">Chỉnh sửa</button>
         <button v-if="loginAcountId===task.managerTaskId" @click="openModalUpdateTaskProgress() ">Cập nhật tiến độ</button>
         <button :disabled="task.progress !== '100' || loginAcountId !==task.managerTaskId"
@@ -265,16 +268,21 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-for="logwork in logworkResponse.data" :key="logwork.logworkId" :class="getRowClass(logwork)">
+      <tr v-for="logwork in logworkResponse.data" :key="logwork.logworkId" >
         <td>{{ logwork.logworkId }}</td>
         <td>{{ logwork.logworkName }}</td>
         <td>{{ logwork.description }}</td>
         <td class="description" :title="logwork.description">{{ new Date(logwork.createDate).toLocaleDateString() }}</td>
         <td>{{ logwork.time }}</td>
         <td>{{ logwork.status }}</td>
-        <td v-if="(roles.includes('MN') && logwork.status ==='Chờ duyệt') || (loginAcountId === task.parentManagerTaskId && logwork.status ==='Chờ duyệt')">
-          <button @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Duyệt</button>
-          <button @click.stop="showConfirmationModal('Không duyệt', logwork.logworkId)">Không duyệt</button>
+        <td >
+          <button
+          v-if="(roles.includes('MN') && logwork.status ===null) || (loginAcountId === task.parentManagerTaskId && logwork.status ===null)"
+          style="background-color: #007bff;color: white;" @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Nhận xét</button>
+          <button 
+          v-if="(roles.includes('MN') && logwork.status !== null) || (loginAcountId === task.parentManagerTaskId && logwork.status !==null)"
+          style="background-color: #007bff;color: white;" @click.stop="showConfirmationModal('Duyệt', logwork.logworkId)">Chỉnh sửa</button>
+
         </td>
       </tr>
     </tbody>
@@ -284,8 +292,10 @@
   <!-- Modal Xác Nhận Logwork -->
   <div v-if="showModal" class="modal-overlay">
     <div class="modal">
-      <h3>Xác nhận {{ actionType }} logwork</h3>
-      <p>Bạn có chắc chắn muốn {{ actionType }} logwork này?</p>
+      <h3>Nhận xét logwork</h3>
+      <label for="description">Nhận xét:</label>
+                <textarea v-model="logworkStatus" id="description" required></textarea>
+      
       <button @click="confirmAction">Xác nhận</button>
       <button @click="cancelAction">Hủy</button>
     </div>
@@ -321,7 +331,11 @@
         <h2 v-if="usesActionType === 'startTask'">Bắt đầu công việc "{{ task.taskName }}"</h2>
         <h2 v-if="usesActionType === 'taskCompleted'">Hoàn thành công việc "{{ task.taskName }}"</h2>
         <h2 v-if="usesActionType === 'createTE'">Gửi đánh giá cho công việc: "{{ task.taskName }}"</h2>
-
+        <h2 v-if="usesActionType === 'pausedTask'">Tạm dừng công việc: "{{ task.taskName }}"</h2>
+        <h2 v-if="usesActionType === 'continueTask'">Tiếp tục công việc: "{{ task.taskName }}"</h2>
+        <h2 v-if="usesActionType === 'deleteTask'">Xóa công việc: "{{ task.taskName }}"</h2>
+        
+        
         <!-- Nội dung modal thay đổi theo action -->
         <div v-if="usesActionType === 'startTask'">
           <p style="font-weight: bold;" >bạn chắc chắn muốn bắt đầu công việc vào lúc này ?</p>
@@ -331,6 +345,15 @@
         </div>
         <div v-if="usesActionType === 'createTE'">
           <p style="font-weight: bold;" >bạn chắc chắn gửi đánh giá?</p>
+        </div>
+        <div v-if="usesActionType === 'pausedTask'">
+          <p style="font-weight: bold;" >bạn chắc chắn tạm dừng công việc?</p>
+        </div>
+        <div v-if="usesActionType === 'continueTask'">
+          <p style="font-weight: bold;" >bạn chắc chắn tiếp tục công việc?</p>
+        </div>
+        <div v-if="usesActionType === 'deleteTask'">
+          <p style="font-weight: bold;" >bạn chắc chắn xóa công việc?</p>
         </div>
         <div class="form-actions">
           <button class="btn-confirm" @click.stop="submitAction">Xác nhận</button>
@@ -344,7 +367,9 @@
 <script setup>
 import API_ENDPOINTS from "@/api/api";
 import axios from "axios";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
+
 const props = defineProps({
   task: {
     type: Object,
@@ -386,7 +411,7 @@ const showTaskAction = ref(null);
 const showModal = ref(false);
 const showModalAddChildTask =ref(false)
 const selectedProjectId = ref(null)
-const logworkStatus = ref(null)
+
 const selectedLogworkId = ref(null);
 const isModalVisible = ref('')
 const progress = ref('');  
@@ -410,6 +435,10 @@ const taskUpdateRequest = ref({
   endDate: "",
   managerTaskId: props.task.managerTaskId,
 });
+const taskUpdateConditionRequest = reactive({
+  taskCondition :"",
+  
+});
 
 const taskStartRequest = reactive({
   status :'In Progress',
@@ -425,7 +454,7 @@ const logWorkRequest = reactive({
   description: "",
   createDate: new Date(),
   time:"",
-  status: "Chờ duyệt"
+  status: null
 })
 
 const TaskEvaluationRequest = reactive({
@@ -444,6 +473,14 @@ const logworkResponse = reactive({
   data:[]
 })
 
+const logworkStatus = ref("")
+watch(
+  () => logworkResponse.data.status,
+  (newStatus) => {
+    logworkStatus.value = newStatus; // Đồng bộ giá trị khi `status` thay đổi
+  },
+  { immediate: true } // Cập nhật ngay lập tức nếu giá trị đã có sẵn
+);
 const openModalUpdateTaskProgress = () => {
   isModalVisible.value = true;
 };
@@ -482,6 +519,23 @@ const submitAction = async () => {
     
     await handleCreateTaskEvaluation()
   }
+  else if (usesActionType.value === "pausedTask") {
+    console.log("call handleUpdateTaskCondition");
+    taskUpdateConditionRequest.taskCondition = "Paused"
+    await handleUpdateTaskCondition()
+  }
+  else if (usesActionType.value === "continueTask") {
+    console.log("call handleUpdateTaskCondition");
+    taskUpdateConditionRequest.taskCondition = "Active"
+    await handleUpdateTaskCondition()
+  }
+  else if (usesActionType.value === "deleteTask") {
+    console.log("call handleDeleteTask");
+    
+    await handleDeleteTask()
+  }
+
+  
   closeUseModal(); // Đóng modal sau khi xử lý
 };
 
@@ -606,6 +660,32 @@ const handleUpdateTask = async() =>{
   }
 }
 
+const handleUpdateTaskCondition = async() =>{
+  try {
+    const response = await axios.put(API_ENDPOINTS.UPDATE_TASK(props.task.taskId),taskUpdateConditionRequest,{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("update task condition success")
+      emit("update-task",null)
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('update task condition err', error);
+  }
+}
+
+
 const handleStartTask = async() =>{
   try {
     const response = await axios.put(API_ENDPOINTS.UPDATE_START_TASK(props.task.taskId),taskStartRequest,{
@@ -656,6 +736,31 @@ const handleTaskCompleted = async() =>{
   }
 }
 
+const handleDeleteTask = async() =>{
+  try {
+    const response = await axios.delete(API_ENDPOINTS.DELETE_TASK(props.task.taskId),{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log(" delete task success")
+      emit("update-task",null)
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('delete task   err', error);
+  }
+}
+
 
 
 const handleCreateLogwork = async (taskId) =>{
@@ -668,6 +773,7 @@ const handleCreateLogwork = async (taskId) =>{
     })
     if(response.status === 200){
       console.log("create logwork success")
+      showModalCreateLogwork.value=false
     }
   } catch (error) {
     if (error.response) {
@@ -794,7 +900,7 @@ const handleGetTaskEvaluation = async() =>{
     })
     if(response.status === 200){
       console.log("get task evaluation success")
-      TaskEvaluationResponse = response.data.result
+      // TaskEvaluationResponse = response.data.result
     }
   } catch (error) {
     if (error.response) {
@@ -820,8 +926,7 @@ const showConfirmationModal = (action, logworkId) => {
 
 // Xác nhận hành động và cập nhật trạng thái logwork
 const confirmAction = async () => {
-  const status = actionType.value === 'Duyệt' ? 'Đã duyệt' : 'Không duyệt';
-  await handleUpdateLogworkStastus(selectedLogworkId.value, status);
+  await handleUpdateLogworkStastus(selectedLogworkId.value, logworkStatus.value);
   showModal.value = false; // Đóng modal
 };
 

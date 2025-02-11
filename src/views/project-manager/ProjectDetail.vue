@@ -51,9 +51,9 @@
         >Bắt đầu</button>
 
       </div>
-      <div class="project-action"  v-if="projectResponse.data.status === 'Active'">
+      <div class="project-action"  v-if="projectResponse.data.status === 'In Progress'">
         <button
-        :disabled="projectResponse.data.progress !== '100'"
+        :disabled="projectResponse.data.progress !== 100"
          @click.stop="openUseModal('projectCompleted')"
         >Hoàn thành</button>
 
@@ -66,18 +66,19 @@
             <tr>
               <th>#</th>
               <th>Tài khoản</th>
-              <th>Vai trò</th>
               <th>Ngày tham gia</th>
               <th>Công việc</th>
-              <th>Trạng thái</th>
+              
             </tr>
           </thead>
           <tbody>
             <tr v-for="(detail, index) in projectResponse.data.projectDetailResponses" :key="index">
               <td>{{ index + 1 }}</td>
               <td>{{ detail.userName }}</td>
-              <td>{{ detail.status }}</td>
               <td>{{ formatDate(detail.joinDate) }}</td>
+              <td><span v-for="task in detail.taskResponses">{{ task.taskName }},</span></td>
+              <td><button style="background-color: red; border: 0cap; color: aliceblue;" @click="openUseModal('DeleteProjectDT'),deletedacountId=detail.accountId">Xóa</button></td>
+              
             </tr>
           </tbody>
         </table>
@@ -88,13 +89,17 @@
     <div class="modal">
         <h2 v-if="usesActionType === 'startProject'">Bắt đầu dự án "{{ projectResponse.data.projectName }}"</h2>
         <h2 v-if="usesActionType === 'projectCompleted'">Hoàn thành công việc "{{ projectResponse.data.projectName }}"</h2>
-
+        <h2 v-if="usesActionType === 'DeleteProjectDT'">Bạn chắc chắn muốn xóa nhân viên này khỏi dự án "{{ projectResponse.data.projectName }}"</h2>
+        
         <!-- Nội dung modal thay đổi theo action -->
         <div v-if="usesActionType === 'startProject'">
           <p style="font-weight: bold;" >bạn chắc chắn muốn bắt đầu dự án vào lúc này ?</p>
         </div>
         <div v-if="usesActionType === 'projectCompleted'">
           <p style="font-weight: bold;" >bạn chắc chắn dự án đã hoàn thành?</p>
+        </div>
+        <div v-if="usesActionType === 'DeleteProjectDT'">
+          <p style="font-weight: bold;" >bạn chắc chắn Xóa nhân viên khỏi dự án?</p>
         </div>
         <div class="form-actions">
           <button class="btn-confirm" @click.stop="submitAction">Xác nhận</button>
@@ -198,6 +203,14 @@ const submitAction = async () => {
     await handleProjectCompleted()
     handleGetProject()
   }
+  else if (usesActionType.value === "DeleteProjectDT") {
+    console.log("call handle deleteProjectDT");
+    
+    await handleDeletedProjectDetailDetail()
+    handleGetProject()
+  }
+
+  
   closeUseModal(); // Đóng modal sau khi xử lý
 };
 
@@ -248,6 +261,34 @@ const handleProjectCompleted = async() =>{
             console.log('Error setting up request:', error.message);
         }
         console.log('completed project  err', error);
+  }
+}
+const deletedprojectId = projectId
+const deletedacountId = ref(null)
+
+const handleDeletedProjectDetailDetail = async() =>{
+  try {
+    const response = await axios.delete(API_ENDPOINTS.DELETEPROJECTDETAIL(deletedprojectId,deletedacountId.value),{
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if(response.status === 200){
+      console.log("delete project detail success")
+      
+     
+    }
+  } catch (error) {
+    if (error.response) {
+            console.log('Request failed with status:', error.response.status);
+            console.log('Response data:', error.response.data);
+            console.log('Response headers:', error.response.headers);
+        } else if (error.request) {
+            console.log('No response received:', error.request);
+        } else {
+            console.log('Error setting up request:', error.message);
+        }
+        console.log('deleted project  err', error);
   }
 }
 
